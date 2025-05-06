@@ -1,4 +1,5 @@
 const { verifyAccessToken } = require('../utils/jwtUtils');
+const { pool } = require('../config/database');
 
 // Middleware para verificar autenticación
 const authenticateToken = (req, res, next) => {
