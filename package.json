@@ -2,10 +2,11 @@
   "name": "educstation-backend",
   "version": "1.0.0",
   "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
-  },
+"scripts": {
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js",
+  "migrate": "node migrations.js"
+},
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",

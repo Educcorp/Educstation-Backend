@@ -3,8 +3,32 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const { testConnection } = require('./config/database');
+const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
+
+// Función para ejecutar migraciones
+async function runMigrations() {
+  try {
+    console.log('Ejecutando migraciones...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS auth_user (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        email VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        is_staff BOOLEAN DEFAULT FALSE,
+        is_active BOOLEAN DEFAULT TRUE,
+        date_joined DATETIME NOT NULL,
+        is_superuser BOOLEAN DEFAULT FALSE
+      )
+    `);
+    console.log('Migraciones completadas');
+  } catch (error) {
+    console.error('Error en migraciones:', error);
+  }
+}
 
 const app = express();
 
@@ -46,12 +70,22 @@ app.use((err, req, res, next) => {
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+
+// Función principal
+async function startServer() {
+  // Ejecutar migraciones primero
+  await runMigrations();
   
-  // Probar conexión a la base de datos al iniciar
-  await testConnection();
-});
+  // Iniciar el servidor
+  app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
+    
+    // Probar conexión a la base de datos
+    await testConnection();
+  });
+}
+
+startServer();
 
 // Manejo de excepciones no capturadas
 process.on('uncaughtException', (error) => {
