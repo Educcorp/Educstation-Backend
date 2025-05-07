@@ -58,32 +58,7 @@ async function runMigrations() {
       });
     }
     
-    // Crear tabla auth_user
-    console.log('Creando tabla auth_user...');
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS auth_user (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        email VARCHAR(255) NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        first_name VARCHAR(255) NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        is_staff BOOLEAN DEFAULT FALSE,
-        is_active BOOLEAN DEFAULT TRUE,
-        date_joined DATETIME NOT NULL,
-        is_superuser BOOLEAN DEFAULT FALSE
-      )
-    `);
-        // Crear tabla Administrador
-    console.log('Creando tabla Administrador...');
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS Administrador (
-        ID_administrador INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
-        Nombre VARCHAR(50) NOT NULL,
-        Correo_electronico VARCHAR(100) UNIQUE NOT NULL,
-        Contraseña VARCHAR(255) NOT NULL
-      )
-    `);
+
     
         // Crear tabla Categorias
         console.log('Creando tabla Categorias...');
