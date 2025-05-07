@@ -75,6 +75,150 @@ async function runMigrations() {
       )
     `);
     
+    // Crear tabla Administrador
+    console.log('Creando tabla Administrador...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Administrador (
+        ID_administrador INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Nombre VARCHAR(50) NOT NULL,
+        Correo_electronico VARCHAR(100) UNIQUE NOT NULL,
+        Contraseña VARCHAR(255) NOT NULL
+      )
+    `);
+    
+    // Crear tabla Usuarios
+    console.log('Creando tabla Usuarios...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Usuarios (
+        ID_usuarios INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Nombre_Completo VARCHAR(100) NOT NULL,
+        Nickname VARCHAR(30) UNIQUE NOT NULL,
+        Correo_electronico VARCHAR(254) UNIQUE NOT NULL,
+        Contraseña VARCHAR(255) NOT NULL
+      )
+    `);
+    
+    // Crear tabla Categorias
+    console.log('Creando tabla Categorias...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Categorias (
+        ID_categoria INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Nombre_categoria VARCHAR(50) UNIQUE NOT NULL,
+        Descripcion VARCHAR(255) NOT NULL
+      )
+    `);
+    
+    // Crear tabla Publicaciones
+    console.log('Creando tabla Publicaciones...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Publicaciones (
+        ID_publicaciones INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Titulo VARCHAR(100) NOT NULL,
+        Contenido TEXT NOT NULL,
+        Resumen VARCHAR(500),
+        Estado ENUM('borrador', 'publicado', 'archivado') DEFAULT 'borrador',
+        Imagen_destacada_ID INT NULL,
+        Fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        Fecha_modificacion DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+        ID_administrador INT NOT NULL,
+        FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
+      )
+    `);
+    
+    // Crear tabla Historial_Publicaciones
+    console.log('Creando tabla Historial_Publicaciones...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Historial_Publicaciones (
+        ID_Historial INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        ID_publicacion INT NOT NULL,
+        Nombre_blog VARCHAR(100) NOT NULL,
+        Contenido_anterior TEXT NOT NULL,
+        Fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ID_publicacion) REFERENCES Publicaciones(ID_publicaciones) ON DELETE CASCADE
+      )
+    `);
+    
+    // Crear tabla Comentarios
+    console.log('Creando tabla Comentarios...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Comentarios (
+        ID_comentario INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        ID_publicacion INT NOT NULL,
+        ID_Usuario INT NOT NULL,
+        Nickname VARCHAR(40) NOT NULL,
+        Contenido TEXT NOT NULL,
+        Fecha_publicacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ID_publicacion) REFERENCES Publicaciones(ID_publicaciones) ON DELETE CASCADE,
+        FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_usuarios) ON DELETE CASCADE
+      )
+    `);
+    
+    // Crear tabla Imagenes
+    console.log('Creando tabla Imagenes...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Imagenes (
+        ID_imagen INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Nombre_archivo VARCHAR(255) NOT NULL,
+        Ruta VARCHAR(255) NOT NULL,
+        Tipo VARCHAR(50) NOT NULL,
+        Tamaño INT NOT NULL,
+        Alt_text VARCHAR(255),
+        Fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Crear tabla Publicaciones_Categorias
+    console.log('Creando tabla Publicaciones_Categorias...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Publicaciones_Categorias (
+        ID_publicacion INT NOT NULL,
+        ID_categoria INT NOT NULL,
+        PRIMARY KEY (ID_publicacion, ID_categoria),
+        FOREIGN KEY (ID_publicacion) REFERENCES Publicaciones(ID_publicaciones) ON DELETE CASCADE,
+        FOREIGN KEY (ID_categoria) REFERENCES Categorias(ID_categoria) ON DELETE CASCADE
+      )
+    `);
+    
+    // Crear tabla Publicaciones_Imagenes
+    console.log('Creando tabla Publicaciones_Imagenes...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Publicaciones_Imagenes (
+        ID_publicacion INT NOT NULL,
+        ID_imagen INT NOT NULL,
+        Es_destacada BOOLEAN DEFAULT FALSE,
+        Orden INT DEFAULT 0,
+        PRIMARY KEY (ID_publicacion, ID_imagen),
+        FOREIGN KEY (ID_publicacion) REFERENCES Publicaciones(ID_publicaciones) ON DELETE CASCADE,
+        FOREIGN KEY (ID_imagen) REFERENCES Imagenes(ID_imagen) ON DELETE CASCADE
+      )
+    `);
+    
+    // Crear tabla Galerias
+    console.log('Creando tabla Galerias...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Galerias (
+        ID_galeria INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Nombre VARCHAR(100) NOT NULL,
+        Descripcion TEXT,
+        Fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        ID_administrador INT NOT NULL,
+        FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
+      )
+    `);
+    
+    // Insertar categorías iniciales
+    console.log('Insertando categorías iniciales...');
+    await connection.query(`
+      INSERT IGNORE INTO Categorias (Nombre_categoria, Descripcion) VALUES 
+      ('Noticias', 'Últimas noticias y novedades sobre educación y tecnología'),
+      ('Técnicas de Estudio', 'Estrategias y métodos para mejorar el aprendizaje'),
+      ('Problemáticas en el Estudio', 'Dificultades y retos comunes en el aprendizaje'),
+      ('Educación de Calidad', 'Mejores prácticas y estándares para una educación efectiva'),
+      ('Herramientas Tecnológicas', 'Tecnología y recursos para mejorar la enseñanza'),
+      ('Desarrollo Profesional Docente', 'Capacitación y crecimiento profesional para docentes'),
+      ('Comunidad y Colaboración', 'Interacción y trabajo en equipo en el ámbito educativo')
+    `);
+    
     console.log('Migraciones completadas con éxito!');
   } catch (error) {
     console.error('Error al ejecutar migraciones:', error);
