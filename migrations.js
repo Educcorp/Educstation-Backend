@@ -94,7 +94,9 @@ async function runMigrations() {
             Descripcion VARCHAR(255) NOT NULL
           )
         `);
-        
+
+    
+
     
     console.log('Migraciones completadas con éxito!');
   } catch (error) {
