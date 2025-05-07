@@ -195,7 +195,10 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3002', 'https://www.educstation.com/'],
+    credentials: true
+  }));
 app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
