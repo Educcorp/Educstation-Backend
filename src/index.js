@@ -6,6 +6,14 @@ const compression = require('compression');
 const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 
+// Middleware para manejar errores y devolver siempre JSON
+app.use((err, req, res, next) => {
+    console.error('Error en la aplicación:', err);
+    res.status(500).json({ 
+      detail: 'Error interno del servidor', 
+      message: err.message 
+    });
+  });
 // Función para ejecutar migraciones
 async function runMigrations() {
   try {

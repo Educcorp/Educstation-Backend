@@ -15,13 +15,13 @@ const register = async (req, res) => {
 
     // Verificar si las contraseñas coinciden
     if (password !== password2) {
-      return res.status(400).json({ password: "Las contraseñas no coinciden." });
+      return res.status(400).json({ detail: "Las contraseñas no coinciden." });
     }
 
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findByUsername(username);
-    if (existingUser) {
-      return res.status(400).json({ detail: "El usuario ya existe" });
+    // Verificar si el email ya existe
+    const existingEmail = await User.findByUsername(email);
+    if (existingEmail) {
+      return res.status(400).json({ detail: "El correo ya está registrado" });
     }
 
     // Crear usuario
@@ -36,6 +36,7 @@ const register = async (req, res) => {
     // Obtener datos del usuario creado
     const user = await User.findById(userId);
     
+    // Responder con status 201 (Created) y datos básicos del usuario
     res.status(201).json({
       id: user.id,
       username: user.username,
@@ -45,7 +46,11 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en registro:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    // Mejorar manejo de errores con mensajes específicos
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ detail: 'El nombre de usuario o correo ya está en uso' });
+    }
+    res.status(500).json({ detail: 'Error en el servidor: ' + error.message });
   }
 };
 
