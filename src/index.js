@@ -34,7 +34,7 @@ async function runMigrations() {
             Contraseña VARCHAR(255) NOT NULL
           )
         `);
-        
+
             // Crear tabla Categorias
     console.log('Creando tabla Categorias...');
     await connection.query(`
@@ -44,7 +44,42 @@ async function runMigrations() {
         Descripcion VARCHAR(255) NOT NULL
       )
     `);
-        
+       // Crear tabla Publicaciones
+    console.log('Creando tabla Publicaciones...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Publicaciones (
+        ID_publicaciones INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Titulo VARCHAR(100) NOT NULL,
+        Contenido TEXT NOT NULL,
+        Resumen VARCHAR(500),
+        Estado ENUM('borrador', 'publicado', 'archivado') DEFAULT 'borrador',
+        Imagen_destacada_ID INT NULL,
+        Fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        Fecha_modificacion DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+        ID_administrador INT NOT NULL,
+        FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
+      )
+    `);    
+    
+    
+    // Crear tabla Publicaciones
+    console.log('Creando tabla Publicaciones...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Publicaciones (
+        ID_publicaciones INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Titulo VARCHAR(100) NOT NULL,
+        Contenido TEXT NOT NULL,
+        Resumen VARCHAR(500),
+        Estado ENUM('borrador', 'publicado', 'archivado') DEFAULT 'borrador',
+        Imagen_destacada_ID INT NULL,
+        Fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        Fecha_modificacion DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+        ID_administrador INT NOT NULL,
+        FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
+      )
+    `);
+
+    
     console.log('Migraciones completadas');
   } catch (error) {
     console.error('Error en migraciones:', error);
