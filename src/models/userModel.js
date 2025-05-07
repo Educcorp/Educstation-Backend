@@ -6,12 +6,12 @@ class User {
   static async findByUsername(username) {
     try {
       const [rows] = await pool.execute(
-        'SELECT * FROM auth_user WHERE username = ? OR email = ?',
-        [username, username]
+        'SELECT * FROM auth_user WHERE username = ?',
+        [username]
       );
       return rows[0];
     } catch (error) {
-      console.error('Error al buscar usuario:', error);
+      console.error('Error al buscar usuario por username:', error);
       throw error;
     }
   }
