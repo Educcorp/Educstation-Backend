@@ -35,6 +35,16 @@ async function runMigrations() {
           )
         `);
         
+            // Crear tabla Categorias
+    console.log('Creando tabla Categorias...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS Categorias (
+        ID_categoria INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        Nombre_categoria VARCHAR(50) UNIQUE NOT NULL,
+        Descripcion VARCHAR(255) NOT NULL
+      )
+    `);
+        
     console.log('Migraciones completadas');
   } catch (error) {
     console.error('Error en migraciones:', error);
