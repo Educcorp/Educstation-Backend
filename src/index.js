@@ -6,6 +6,7 @@ const compression = require('compression');
 const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 // Función para ejecutar migraciones
 async function runMigrations() {
@@ -215,6 +216,7 @@ app.use((req, res, next) => {
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriasRoutes);
+app.use('/api/search', searchRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
