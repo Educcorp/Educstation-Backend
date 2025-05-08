@@ -14,7 +14,7 @@ class Categoria {
       throw error;
     }
   }
-  
+
   // Buscar categoría por nombre
   static async findByName(nombre) {
     try {
@@ -41,41 +41,41 @@ class Categoria {
       throw error;
     }
   }
-  
+
   // Crear una nueva categoría
   static async create(categoriaData) {
     const { nombre, descripcion } = categoriaData;
-    
+
     try {
       const [result] = await pool.execute(
         'INSERT INTO Categorias (Nombre_categoria, Descripcion) VALUES (?, ?)',
         [nombre, descripcion]
       );
-      
+
       return result.insertId;
     } catch (error) {
       console.error('Error al crear categoría:', error);
       throw error;
     }
   }
-  
+
   // Actualizar categoría
   static async update(id, categoriaData) {
     const { nombre, descripcion } = categoriaData;
-    
+
     try {
       const [result] = await pool.execute(
         'UPDATE Categorias SET Nombre_categoria = ?, Descripcion = ? WHERE ID_categoria = ?',
         [nombre, descripcion, id]
       );
-      
+
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error al actualizar categoría:', error);
       throw error;
     }
   }
-  
+
   // Eliminar categoría
   static async delete(id) {
     try {
@@ -83,14 +83,14 @@ class Categoria {
         'DELETE FROM Categorias WHERE ID_categoria = ?',
         [id]
       );
-      
+
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error al eliminar categoría:', error);
       throw error;
     }
   }
-  
+
   // Obtener publicaciones por categoría
   static async getPublicaciones(id) {
     try {
@@ -105,6 +105,78 @@ class Categoria {
       return rows;
     } catch (error) {
       console.error('Error al obtener publicaciones por categoría:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener publicaciones por categoría con paginación
+   * @param {number} id ID de la categoría
+   * @param {number} limit Límite de resultados
+   * @param {number} offset Offset para paginación
+   * @returns {Array} Lista de publicaciones que pertenecen a la categoría
+   */
+  static async getPublicacionesPaginated(id, limit = 10, offset = 0) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT p.* 
+         FROM Publicaciones p
+         JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+         WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'
+         ORDER BY p.Fecha_creacion DESC
+         LIMIT ? OFFSET ?`,
+        [id, limit, offset]
+      );
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener publicaciones por categoría con paginación:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Contar publicaciones por categoría
+   * @param {number} id ID de la categoría
+   * @returns {number} Total de publicaciones que pertenecen a la categoría
+   */
+  static async countPublicaciones(id) {
+    try {
+      const [result] = await pool.execute(
+        `SELECT COUNT(*) as total 
+         FROM Publicaciones p
+         JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+         WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'`,
+        [id]
+      );
+      return result[0].total;
+    } catch (error) {
+      console.error('Error al contar publicaciones por categoría:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener categorías populares ordenadas por cantidad de publicaciones
+   * @param {number} limit Número máximo de categorías a retornar
+   * @returns {Array} Lista de categorías populares con conteo de publicaciones
+   */
+  static async getPopularCategories(limit = 5) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT c.ID_categoria, c.Nombre_categoria, c.Descripcion, 
+                COUNT(pc.ID_publicacion) as total_publicaciones
+         FROM Categorias c
+         LEFT JOIN Publicaciones_Categorias pc ON c.ID_categoria = pc.ID_categoria
+         LEFT JOIN Publicaciones p ON pc.ID_publicacion = p.ID_publicaciones 
+                                   AND p.Estado = 'publicado'
+         GROUP BY c.ID_categoria
+         ORDER BY total_publicaciones DESC
+         LIMIT ?`,
+        [limit]
+      );
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener categorías populares:', error);
       throw error;
     }
   }
