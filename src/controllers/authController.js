@@ -15,13 +15,13 @@ const register = async (req, res) => {
 
     // Verificar si las contraseñas coinciden
     if (password !== password2) {
-      return res.status(400).json({ password: "Las contraseñas no coinciden." });
+      return res.status(400).json({ detail: "Las contraseñas no coinciden." });
     }
 
     // Verificar si el usuario ya existe
     const existingUser = await User.findByUsername(username);
     if (existingUser) {
-      return res.status(400).json({ detail: "El usuario ya existe" });
+      return res.status(400).json({ detail: "El nombre de usuario ya está en uso" });
     }
 
     // Crear usuario
@@ -45,6 +45,9 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en registro:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ detail: 'El email o nombre de usuario ya está registrado' });
+    }
     res.status(500).json({ detail: 'Error en el servidor' });
   }
 };
@@ -144,6 +147,14 @@ const checkUsernameAvailability = async (req, res) => {
 
     if (!username) {
       return res.status(400).json({ detail: 'Se requiere un nombre de usuario' });
+    }
+
+    // Validar formato de nombre de usuario antes de buscar en la base de datos
+    if (!/^[a-z0-9_.-]{3,}$/.test(username)) {
+      return res.json({
+        available: false,
+        message: 'Nombre de usuario inválido. Use solo letras minúsculas, números, punto y guion bajo (mínimo 3 caracteres)'
+      });
     }
 
     const existingUser = await User.findByUsername(username);
