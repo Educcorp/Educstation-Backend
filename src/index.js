@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const compression = require('compression');
 const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
+const categoriasRoutes = require('./routes/categoriasRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 // Función para ejecutar migraciones
 async function runMigrations() {
@@ -24,9 +26,9 @@ async function runMigrations() {
         FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
       )
     `);
-        // Crear tabla auth_user
-        console.log('Creando tabla auth_user...');
-        await pool.query(`
+    // Crear tabla auth_user
+    console.log('Creando tabla auth_user...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS auth_user (
             id INT AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(255) NOT NULL UNIQUE,
@@ -41,9 +43,9 @@ async function runMigrations() {
           )
         `);
 
-        // Crear tabla Administrador
-        console.log('Creando tabla Administrador...');
-        await pool.query(`
+    // Crear tabla Administrador
+    console.log('Creando tabla Administrador...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Administrador (
             ID_administrador INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Nombre VARCHAR(50) NOT NULL,
@@ -51,10 +53,10 @@ async function runMigrations() {
             Contraseña VARCHAR(255) NOT NULL
           )
         `);
-        
-        // Crear tabla Usuarios
-        console.log('Creando tabla Usuarios...');
-        await pool.query(`
+
+    // Crear tabla Usuarios
+    console.log('Creando tabla Usuarios...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Usuarios (
             ID_usuarios INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Nombre_Completo VARCHAR(100) NOT NULL,
@@ -63,20 +65,20 @@ async function runMigrations() {
             Contraseña VARCHAR(255) NOT NULL
           )
         `);
-        
-        // Crear tabla Categorias
-        console.log('Creando tabla Categorias...');
-        await pool.query(`
+
+    // Crear tabla Categorias
+    console.log('Creando tabla Categorias...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Categorias (
             ID_categoria INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Nombre_categoria VARCHAR(50) UNIQUE NOT NULL,
             Descripcion VARCHAR(255) NOT NULL
           )
         `);
-        
-        // Crear tabla Publicaciones
-        console.log('Creando tabla Publicaciones...');
-        await pool.query(`
+
+    // Crear tabla Publicaciones
+    console.log('Creando tabla Publicaciones...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Publicaciones (
             ID_publicaciones INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Titulo VARCHAR(100) NOT NULL,
@@ -90,10 +92,10 @@ async function runMigrations() {
             FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
           )
         `);
-        
-        // Crear tabla Historial_Publicaciones
-        console.log('Creando tabla Historial_Publicaciones...');
-        await pool.query(`
+
+    // Crear tabla Historial_Publicaciones
+    console.log('Creando tabla Historial_Publicaciones...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Historial_Publicaciones (
             ID_Historial INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             ID_publicacion INT NOT NULL,
@@ -103,10 +105,10 @@ async function runMigrations() {
             FOREIGN KEY (ID_publicacion) REFERENCES Publicaciones(ID_publicaciones) ON DELETE CASCADE
           )
         `);
-        
-        // Crear tabla Comentarios
-        console.log('Creando tabla Comentarios...');
-        await pool.query(`
+
+    // Crear tabla Comentarios
+    console.log('Creando tabla Comentarios...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Comentarios (
             ID_comentario INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             ID_publicacion INT NOT NULL,
@@ -118,10 +120,10 @@ async function runMigrations() {
             FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_usuarios) ON DELETE CASCADE
           )
         `);
-        
-        // Crear tabla Imagenes
-        console.log('Creando tabla Imagenes...');
-        await pool.query(`
+
+    // Crear tabla Imagenes
+    console.log('Creando tabla Imagenes...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Imagenes (
             ID_imagen INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Nombre_archivo VARCHAR(255) NOT NULL,
@@ -132,10 +134,10 @@ async function runMigrations() {
             Fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
           )
         `);
-        
-        // Crear tabla Publicaciones_Categorias
-        console.log('Creando tabla Publicaciones_Categorias...');
-        await pool.query(`
+
+    // Crear tabla Publicaciones_Categorias
+    console.log('Creando tabla Publicaciones_Categorias...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Publicaciones_Categorias (
             ID_publicacion INT NOT NULL,
             ID_categoria INT NOT NULL,
@@ -144,10 +146,10 @@ async function runMigrations() {
             FOREIGN KEY (ID_categoria) REFERENCES Categorias(ID_categoria) ON DELETE CASCADE
           )
         `);
-        
-        // Crear tabla Publicaciones_Imagenes
-        console.log('Creando tabla Publicaciones_Imagenes...');
-        await pool.query(`
+
+    // Crear tabla Publicaciones_Imagenes
+    console.log('Creando tabla Publicaciones_Imagenes...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Publicaciones_Imagenes (
             ID_publicacion INT NOT NULL,
             ID_imagen INT NOT NULL,
@@ -158,10 +160,10 @@ async function runMigrations() {
             FOREIGN KEY (ID_imagen) REFERENCES Imagenes(ID_imagen) ON DELETE CASCADE
           )
         `);
-        
-        // Crear tabla Galerias
-        console.log('Creando tabla Galerias...');
-        await pool.query(`
+
+    // Crear tabla Galerias
+    console.log('Creando tabla Galerias...');
+    await pool.query(`
           CREATE TABLE IF NOT EXISTS Galerias (
             ID_galeria INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Nombre VARCHAR(100) NOT NULL,
@@ -171,10 +173,10 @@ async function runMigrations() {
             FOREIGN KEY (ID_administrador) REFERENCES Administrador(ID_administrador) ON DELETE CASCADE
           )
         `);
-        
-        // Insertar categorías iniciales
-        console.log('Insertando categorías iniciales...');
-        await pool.query(`
+
+    // Insertar categorías iniciales
+    console.log('Insertando categorías iniciales...');
+    await pool.query(`
           INSERT IGNORE INTO Categorias (Nombre_categoria, Descripcion) VALUES 
           ('Noticias', 'Últimas noticias y novedades sobre educación y tecnología'),
           ('Técnicas de Estudio', 'Estrategias y métodos para mejorar el aprendizaje'),
@@ -196,10 +198,10 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-    origin: ['http://localhost:3002', 'https://www.educstation.com', 'https://educstation.com'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['http://localhost:3002', 'http://localhost:3000', 'http://localhost:5173', 'https://www.educstation.com', 'https://educstation.com'], credentials: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(helmet());
 app.use(compression());
@@ -213,6 +215,8 @@ app.use((req, res, next) => {
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/categorias', categoriasRoutes);
+app.use('/api/search', searchRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
@@ -241,11 +245,11 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   // Ejecutar migraciones primero
   await runMigrations();
-  
+
   // Iniciar el servidor
   app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
-    
+
     // Probar conexión a la base de datos
     await testConnection();
   });

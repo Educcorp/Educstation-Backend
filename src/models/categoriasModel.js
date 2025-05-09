@@ -1,3 +1,5 @@
+// src/models/categoriasModel.js - Versión mejorada
+
 const { pool } = require('../config/database');
 
 class Categoria {
@@ -14,7 +16,7 @@ class Categoria {
       throw error;
     }
   }
-  
+
   // Buscar categoría por nombre
   static async findByName(nombre) {
     try {
@@ -41,41 +43,59 @@ class Categoria {
       throw error;
     }
   }
-  
+
+  // Obtener todas las categorías con conteo de publicaciones
+  static async getAllWithPostCount() {
+    try {
+      const [rows] = await pool.execute(`
+        SELECT c.*, COUNT(pc.ID_publicacion) as post_count
+        FROM Categorias c
+        LEFT JOIN Publicaciones_Categorias pc ON c.ID_categoria = pc.ID_categoria
+        LEFT JOIN Publicaciones p ON pc.ID_publicacion = p.ID_publicaciones AND p.Estado = 'publicado'
+        GROUP BY c.ID_categoria
+        ORDER BY c.Nombre_categoria
+      `);
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener categorías con conteo:', error);
+      throw error;
+    }
+  }
+
   // Crear una nueva categoría
   static async create(categoriaData) {
     const { nombre, descripcion } = categoriaData;
-    
+
     try {
       const [result] = await pool.execute(
         'INSERT INTO Categorias (Nombre_categoria, Descripcion) VALUES (?, ?)',
         [nombre, descripcion]
       );
-      
+
       return result.insertId;
     } catch (error) {
       console.error('Error al crear categoría:', error);
       throw error;
     }
   }
-  
+
   // Actualizar categoría
   static async update(id, categoriaData) {
     const { nombre, descripcion } = categoriaData;
-    
+
     try {
       const [result] = await pool.execute(
         'UPDATE Categorias SET Nombre_categoria = ?, Descripcion = ? WHERE ID_categoria = ?',
         [nombre, descripcion, id]
       );
-      
+
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error al actualizar categoría:', error);
       throw error;
     }
   }
-  
+
   // Eliminar categoría
   static async delete(id) {
     try {
@@ -83,14 +103,14 @@ class Categoria {
         'DELETE FROM Categorias WHERE ID_categoria = ?',
         [id]
       );
-      
+
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error al eliminar categoría:', error);
       throw error;
     }
   }
-  
+
   // Obtener publicaciones por categoría
   static async getPublicaciones(id) {
     try {
@@ -105,6 +125,43 @@ class Categoria {
       return rows;
     } catch (error) {
       console.error('Error al obtener publicaciones por categoría:', error);
+      throw error;
+    }
+  }
+
+  // Obtener publicaciones paginadas por categoría
+  static async getPublicacionesPaginated(id, limit, offset) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT p.*, a.Nombre as NombreAdmin 
+         FROM Publicaciones p
+         JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+         JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+         WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'
+         ORDER BY p.Fecha_creacion DESC
+         LIMIT ? OFFSET ?`,
+        [id, limit, offset]
+      );
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener publicaciones paginadas:', error);
+      throw error;
+    }
+  }
+
+  // Contar total de publicaciones por categoría
+  static async countPublicaciones(id) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT COUNT(*) as total
+         FROM Publicaciones p
+         JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+         WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'`,
+        [id]
+      );
+      return rows[0].total;
+    } catch (error) {
+      console.error('Error al contar publicaciones:', error);
       throw error;
     }
   }

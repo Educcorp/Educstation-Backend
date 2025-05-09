@@ -1,3 +1,5 @@
+// src/routes/categoriasRoutes.js - Versión actualizada
+
 const express = require('express');
 const router = express.Router();
 const categoriasController = require('../controllers/categoriasController');
@@ -13,6 +15,7 @@ const categoriaValidator = [
 // Rutas públicas
 router.get('/', categoriasController.getAllCategorias);
 router.get('/:id', categoriasController.getCategoriaById);
+router.get('/slug/:slug', categoriasController.getCategoriaBySlug); // Nueva ruta por slug
 router.get('/:id/publicaciones', categoriasController.getPublicacionesByCategoria);
 
 // Rutas protegidas (solo administradores)
