@@ -1,4 +1,4 @@
-// src/controllers/categoriasController.js - Versión mejorada
+// src/controllers/categoriasController.js - Versión corregida
 
 const Categoria = require('../models/categoriasModel');
 const { validationResult } = require('express-validator');
@@ -6,9 +6,26 @@ const { validationResult } = require('express-validator');
 // Obtener todas las categorías
 const getAllCategorias = async (req, res) => {
   try {
-    // Añadir soporte para parámetros de consulta
+    // Parámetros de paginación
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const { conConteo = false } = req.query;
 
+    // Validar parámetros
+    if (limite && (isNaN(limite) || limite < 1)) {
+      return res.status(400).json({
+        success: false,
+        detail: 'El límite debe ser un número positivo'
+      });
+    }
+    if (offset && (isNaN(offset) || offset < 0)) {
+      return res.status(400).json({
+        success: false,
+        detail: 'El offset debe ser un número no negativo'
+      });
+    }
+
+    // Obtener categorías según parámetros
     let categorias;
     if (conConteo === 'true') {
       categorias = await Categoria.getAllWithPostCount();
@@ -16,10 +33,18 @@ const getAllCategorias = async (req, res) => {
       categorias = await Categoria.getAll();
     }
 
+    // Obtener total para paginación
+    const total = await Categoria.getTotal();
+
     res.json({
       success: true,
       count: categorias.length,
-      data: categorias
+      total: total,
+      data: categorias,
+      meta: {
+        limite,
+        offset
+      }
     });
   } catch (error) {
     console.error('Error al obtener categorías:', error);
@@ -29,6 +54,7 @@ const getAllCategorias = async (req, res) => {
     });
   }
 };
+
 
 // Obtener una categoría por ID
 const getCategoriaById = async (req, res) => {
@@ -275,12 +301,101 @@ const getPublicacionesByCategoria = async (req, res) => {
   }
 };
 
+// Añadir estos nuevos métodos al controlador existente
+
+/**
+ * @api {get} /api/categorias/stats Obtener estadísticas de categorías
+ * @apiName GetCategoriasStats
+ * @apiGroup Categorias
+ * @apiSuccess {Object[]} stats Estadísticas de publicaciones por categoría
+ */
+const getCategoriasStats = async (req, res) => {
+  try {
+    // Usamos getAllWithPostCount ya que tiene la información que necesitamos
+    const stats = await Categoria.getAllWithPostCount();
+
+    res.json({
+      success: true,
+      count: stats.length,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error al obtener estadísticas de categorías:', error);
+    res.status(500).json({
+      success: false,
+      detail: 'Error en el servidor'
+    });
+  }
+};
+
+/**
+ * @api {get} /api/categorias/search Buscar categorías
+ * @apiName SearchCategorias
+ * @apiGroup Categorias
+ * @apiParam {String} term Término de búsqueda
+ * @apiParam {String} [orderBy=Nombre_categoria] Campo para ordenar resultados
+ * @apiParam {String} [orderDir=asc] Dirección de ordenamiento (asc/desc)
+ * @apiParam {Number} [page=1] Página actual
+ * @apiParam {Number} [limit=10] Cantidad de resultados por página
+ * @apiSuccess {Object[]} categorias Categorías encontradas
+ */
+const searchCategorias = async (req, res) => {
+  try {
+    const { term, orderBy = 'Nombre_categoria', orderDir = 'ASC', page = 1, limit = 10 } = req.query;
+
+    if (!term) {
+      return res.status(400).json({
+        success: false,
+        detail: 'Se requiere un término de búsqueda'
+      });
+    }
+
+    // Convertir a números
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    // Calcular offset
+    const offset = (pageNum - 1) * limitNum;
+
+    // Validar campos de ordenamiento
+    const validOrderFields = ['Nombre_categoria', 'ID_categoria'];
+    const cleanOrderBy = validOrderFields.includes(orderBy) ? orderBy : 'Nombre_categoria';
+
+    // Validar dirección
+    const cleanOrderDir = ['ASC', 'DESC'].includes(orderDir.toUpperCase()) ?
+      orderDir.toUpperCase() : 'ASC';
+
+    // Buscar categorías
+    const categorias = await Categoria.search(term, cleanOrderBy, cleanOrderDir, limitNum, offset);
+
+    // Contar total de resultados
+    const totalResults = await Categoria.countSearchResults(term);
+
+    res.json({
+      success: true,
+      count: categorias.length,
+      total: totalResults,
+      totalPages: Math.ceil(totalResults / limitNum),
+      currentPage: pageNum,
+      data: categorias
+    });
+  } catch (error) {
+    console.error('Error al buscar categorías:', error);
+    res.status(500).json({
+      success: false,
+      detail: 'Error en el servidor'
+    });
+  }
+};
+
 module.exports = {
   getAllCategorias,
   getCategoriaById,
-  getCategoriaBySlug,  // Nueva función
+  getCategoriaBySlug,
   createCategoria,
   updateCategoria,
   deleteCategoria,
-  getPublicacionesByCategoria
+  getPublicacionesByCategoria,
+  getCategoriasStats,
+  searchCategorias
 };

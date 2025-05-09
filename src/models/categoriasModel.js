@@ -31,15 +31,65 @@ class Categoria {
     }
   }
 
-  // Obtener todas las categorías
-  static async getAll() {
+  // Añadir estos nuevos métodos al modelo existente
+
+  // Obtener total de categorías
+  static async getTotal() {
     try {
       const [rows] = await pool.execute(
-        'SELECT * FROM Categorias ORDER BY Nombre_categoria'
+        'SELECT COUNT(*) as total FROM Categorias'
       );
       return rows;
     } catch (error) {
-      console.error('Error al obtener categorías:', error);
+      console.error('Error al obtener total de categorías:', error);
+      throw error;
+    }
+  }
+
+  // Obtener estadísticas de categorías
+  static async getStats() {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT c.ID_categoria, c.Nombre_categoria, 
+       COUNT(pc.ID_publicacion) as total_publicaciones
+       FROM Categorias c
+       LEFT JOIN Publicaciones_Categorias pc ON c.ID_categoria = pc.ID_categoria
+       GROUP BY c.ID_categoria
+       ORDER BY total_publicaciones DESC`
+      );
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener estadísticas de categorías:', error);
+      throw error;
+    }
+  }
+
+  // Método para búsqueda avanzada en categorías
+  static async search(term, filters = {}) {
+    try {
+      let query = `
+      SELECT c.* 
+      FROM Categorias c
+      WHERE c.Nombre_categoria LIKE ? OR c.Descripcion LIKE ?
+    `;
+
+      const params = [`%${term}%`, `%${term}%`];
+
+      // Ordenamiento
+      const orderBy = filters.orderBy || 'Nombre_categoria';
+      const orderDir = filters.orderDir === 'desc' ? 'DESC' : 'ASC';
+      query += ` ORDER BY ${orderBy} ${orderDir}`;
+
+      // Paginación
+      const limite = filters.limite || 10;
+      const offset = filters.offset || 0;
+      query += ' LIMIT ? OFFSET ?';
+      params.push(limite, offset);
+
+      const [rows] = await pool.execute(query, params);
+      return rows;
+    } catch (error) {
+      console.error('Error en búsqueda de categorías:', error);
       throw error;
     }
   }
@@ -165,6 +215,65 @@ class Categoria {
       throw error;
     }
   }
+
+  // Obtener total de categorías
+  static async getTotal() {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT COUNT(*) as total FROM Categorias'
+      );
+      return rows[0].total;
+    } catch (error) {
+      console.error('Error al obtener total de categorías:', error);
+      throw error;
+    }
+  }
+
+  // Buscar categorías por término
+  static async search(term, orderBy = 'Nombre_categoria', orderDir = 'ASC', limit = 10, offset = 0) {
+    try {
+      // Validar campos para prevenir SQL injection
+      const validOrderFields = ['Nombre_categoria', 'ID_categoria'];
+      const safeOrderBy = validOrderFields.includes(orderBy) ? orderBy : 'Nombre_categoria';
+      const safeOrderDir = ['ASC', 'DESC'].includes(orderDir) ? orderDir : 'ASC';
+
+      const query = `
+      SELECT c.*
+      FROM Categorias c
+      WHERE c.Nombre_categoria LIKE ? OR c.Descripcion LIKE ?
+      ORDER BY c.${safeOrderBy} ${safeOrderDir}
+      LIMIT ? OFFSET ?
+    `;
+
+      const [rows] = await pool.execute(
+        query,
+        [`%${term}%`, `%${term}%`, limit, offset]
+      );
+
+      return rows;
+    } catch (error) {
+      console.error('Error al buscar categorías:', error);
+      throw error;
+    }
+  }
+
+  // Contar resultados de búsqueda
+  static async countSearchResults(term) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT COUNT(*) as total
+       FROM Categorias
+       WHERE Nombre_categoria LIKE ? OR Descripcion LIKE ?`,
+        [`%${term}%`, `%${term}%`]
+      );
+
+      return rows[0].total;
+    } catch (error) {
+      console.error('Error al contar resultados de búsqueda:', error);
+      throw error;
+    }
+  }
+
 }
 
 module.exports = Categoria;
