@@ -1,234 +1,151 @@
+// src/controllers/searchController.js - Nuevo archivo
+
 const Publicacion = require('../models/publicacionesModel');
 const Categoria = require('../models/categoriasModel');
-const { validationResult } = require('express-validator');
 
-/**
- * @desc    Buscar publicaciones por término simple (título, contenido o resumen)
- * @route   GET /api/search
- * @access  Público
- * @param   {string} req.query.q - Término de búsqueda
- * @param   {number} req.query.limit - Número de resultados a retornar (opcional, default: 10)
- * @param   {number} req.query.page - Página de resultados (opcional, default: 1)
- * @returns {Array} Lista de publicaciones que coinciden con el término
- */
+// Búsqueda básica de publicaciones
 const searchPublicaciones = async (req, res) => {
     try {
-        const { q, limit = 10, page = 1 } = req.query;
+        const { q, title, content, category, page = 1, limit = 10, sort = 'fecha', order = 'desc' } = req.query;
 
-        if (!q) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Es necesario proporcionar un término de búsqueda (q)'
-            });
+        // Convertir a números enteros
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+
+        // Calcular offset
+        const offset = (pageNum - 1) * limitNum;
+
+        let publicaciones = [];
+        let totalResults = 0;
+
+        // Construir términos de búsqueda
+        const searchTerm = q || '';
+        const titleTerm = title || '';
+        const contentTerm = content || '';
+
+        // Si se especificó una categoría, primero obtener su ID
+        let categoryId = null;
+        if (category) {
+            // Intentar buscar la categoría por nombre formateado desde el slug
+            const categoryName = category
+                .split('-')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+
+            const categoriaObj = await Categoria.findByName(categoryName);
+            if (categoriaObj) {
+                categoryId = categoriaObj.ID_categoria;
+            }
         }
 
-        // Calcular offset para paginación
-        const offset = (page - 1) * limit;
+        // Realizar la búsqueda
+        if (searchTerm || titleTerm || contentTerm || categoryId) {
+            const resultados = await Publicacion.search(
+                searchTerm,
+                titleTerm,
+                contentTerm,
+                categoryId,
+                limitNum,
+                offset,
+                sort,
+                order
+            );
 
-        // Realizar búsqueda
-        const resultados = await Publicacion.search(q, parseInt(limit), parseInt(offset));
+            publicaciones = resultados.publicaciones;
+            totalResults = resultados.total;
+        } else {
+            // Si no hay términos de búsqueda, obtener las publicaciones más recientes
+            const resultados = await Publicacion.getAll(limitNum, offset, 'publicado');
+            publicaciones = resultados.publicaciones;
+            totalResults = resultados.total;
+        }
 
-        // Obtener el total de resultados para la paginación
-        const total = await Publicacion.countSearchResults(q);
-
-        res.json({
-            status: 'success',
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / limit),
-            results: resultados
+        res.status(200).json({
+            success: true,
+            count: publicaciones.length,
+            total: totalResults,
+            totalPages: Math.ceil(totalResults / limitNum),
+            currentPage: pageNum,
+            data: publicaciones
         });
     } catch (error) {
-        console.error('Error en búsqueda de publicaciones:', error);
+        console.error('Error en la búsqueda:', error);
         res.status(500).json({
-            status: 'error',
-            message: 'Error en el servidor al buscar publicaciones'
+            success: false,
+            error: 'Error del servidor al realizar la búsqueda'
         });
     }
 };
 
-/**
- * @desc    Buscar publicaciones con filtrado y ordenamiento avanzados
- * @route   POST /api/search/advanced
- * @access  Público
- * @param   {string} req.body.term - Término de búsqueda (opcional)
- * @param   {Array} req.body.categorias - IDs de categorías para filtrar (opcional)
- * @param   {Date} req.body.fechaDesde - Fecha desde (opcional)
- * @param   {Date} req.body.fechaHasta - Fecha hasta (opcional)
- * @param   {string} req.body.estado - Estado de publicación (opcional)
- * @param   {string} req.body.orderBy - Campo para ordenar resultados (opcional)
- * @param   {string} req.body.orderDir - Dirección de ordenamiento: 'asc' o 'desc' (opcional)
- * @param   {number} req.body.limit - Número de resultados a retornar (opcional)
- * @param   {number} req.body.page - Página de resultados (opcional)
- * @returns {Array} Lista de publicaciones que coinciden con los criterios
- */
+// Búsqueda avanzada de publicaciones
 const advancedSearch = async (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                status: 'error',
-                errors: errors.array()
-            });
-        }
-
         const {
-            term = '',
-            categorias = [],
-            fechaDesde,
-            fechaHasta,
-            estado,
-            orderBy = 'Fecha_creacion',
-            orderDir = 'desc',
-            limit = 10,
-            page = 1
+            keywords,
+            categories,
+            dateRange,
+            author,
+            sort = 'fecha',
+            order = 'desc',
+            page = 1,
+            limit = 10
         } = req.body;
 
-        // Validar ordenamiento
-        const validOrderFields = ['Titulo', 'Fecha_creacion', 'Fecha_modificacion'];
-        const validOrderDirs = ['asc', 'desc'];
+        // Convertir a números enteros
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
 
-        if (!validOrderFields.includes(orderBy)) {
-            return res.status(400).json({
-                status: 'error',
-                message: `Campo de ordenamiento inválido. Valores permitidos: ${validOrderFields.join(', ')}`
-            });
-        }
+        // Calcular offset
+        const offset = (pageNum - 1) * limitNum;
 
-        if (!validOrderDirs.includes(orderDir.toLowerCase())) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Dirección de ordenamiento inválida. Valores permitidos: asc, desc'
-            });
-        }
-
-        // Calcular offset para paginación
-        const offset = (page - 1) * limit;
-
-        // Construir criterios de búsqueda
-        const searchCriteria = {
-            term,
-            categorias: categorias.map(id => parseInt(id)),
-            fechaDesde: fechaDesde ? new Date(fechaDesde) : null,
-            fechaHasta: fechaHasta ? new Date(fechaHasta) : null,
-            estado,
-            orderBy,
-            orderDir: orderDir.toLowerCase(),
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        };
-
-        // Realizar búsqueda avanzada
-        const resultados = await Publicacion.advancedSearch(searchCriteria);
-
-        // Obtener el total de resultados para la paginación
-        const total = await Publicacion.countAdvancedSearchResults(searchCriteria);
-
-        res.json({
-            status: 'success',
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / limit),
-            filters: {
-                term,
-                categorias,
-                fechaDesde,
-                fechaHasta,
-                estado
-            },
-            sorting: {
-                orderBy,
-                orderDir
-            },
-            results: resultados
-        });
-    } catch (error) {
-        console.error('Error en búsqueda avanzada:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Error en el servidor al realizar búsqueda avanzada'
-        });
-    }
-};
-
-/**
- * @desc    Buscar publicaciones por etiquetas/categorías
- * @route   GET /api/search/tag/:tagId
- * @access  Público
- * @param   {string} req.params.tagId - ID de la categoría
- * @param   {number} req.query.limit - Número de resultados a retornar (opcional)
- * @param   {number} req.query.page - Página de resultados (opcional)
- * @returns {Array} Lista de publicaciones asociadas a la categoría
- */
-const searchByTag = async (req, res) => {
-    try {
-        const { tagId } = req.params;
-        const { limit = 10, page = 1 } = req.query;
-
-        // Verificar si existe la categoría
-        const categoria = await Categoria.findById(tagId);
-        if (!categoria) {
-            return res.status(404).json({
-                status: 'error',
-                message: 'Categoría no encontrada'
-            });
-        }
-
-        // Calcular offset para paginación
-        const offset = (page - 1) * limit;
-
-        // Obtener publicaciones por categoría con paginación
-        const publicaciones = await Categoria.getPublicacionesPaginated(
-            tagId,
-            parseInt(limit),
-            parseInt(offset)
+        // Realizar la búsqueda avanzada
+        const resultados = await Publicacion.advancedSearch(
+            keywords,
+            categories,
+            dateRange,
+            author,
+            limitNum,
+            offset,
+            sort,
+            order
         );
 
-        // Obtener el total de publicaciones para esta categoría
-        const total = await Categoria.countPublicaciones(tagId);
-
-        res.json({
-            status: 'success',
-            categoria: categoria.Nombre_categoria,
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / limit),
-            results: publicaciones
+        res.status(200).json({
+            success: true,
+            count: resultados.publicaciones.length,
+            total: resultados.total,
+            totalPages: Math.ceil(resultados.total / limitNum),
+            currentPage: pageNum,
+            data: resultados.publicaciones
         });
     } catch (error) {
-        console.error('Error al buscar por etiqueta:', error);
+        console.error('Error en la búsqueda avanzada:', error);
         res.status(500).json({
-            status: 'error',
-            message: 'Error en el servidor al buscar por etiqueta'
+            success: false,
+            error: 'Error del servidor al realizar la búsqueda avanzada'
         });
     }
 };
 
-/**
- * @desc    Obtener las categorías más usadas/populares
- * @route   GET /api/search/trending-tags
- * @access  Público
- * @param   {number} req.query.limit - Número de categorías a retornar (opcional)
- * @returns {Array} Lista de categorías populares con conteo de publicaciones
- */
-const getTrendingTags = async (req, res) => {
+// Obtener etiquetas populares para autocompletar
+const getPopularTags = async (req, res) => {
     try {
-        const { limit = 5 } = req.query;
+        // Esta función dependerá de cómo manejes las etiquetas en tu base de datos
+        // Por ahora, podemos devolver una lista fija de etiquetas populares
+        const popularTags = [
+            'Educación', 'Técnicas', 'Estudio', 'Aprendizaje', 'Digital',
+            'Innovación', 'Herramientas', 'Docentes', 'Evaluación', 'Metodología'
+        ];
 
-        const popularTags = await Categoria.getPopularCategories(parseInt(limit));
-
-        res.json({
-            status: 'success',
-            results: popularTags
+        res.status(200).json({
+            success: true,
+            data: popularTags
         });
     } catch (error) {
         console.error('Error al obtener etiquetas populares:', error);
         res.status(500).json({
-            status: 'error',
-            message: 'Error en el servidor al obtener etiquetas populares'
+            success: false,
+            error: 'Error del servidor al obtener etiquetas populares'
         });
     }
 };
@@ -236,6 +153,5 @@ const getTrendingTags = async (req, res) => {
 module.exports = {
     searchPublicaciones,
     advancedSearch,
-    searchByTag,
-    getTrendingTags
+    getPopularTags
 };
