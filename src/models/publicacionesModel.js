@@ -431,6 +431,41 @@ class Publicacion {
       throw error;
     }
   }
+
+  // Añade estos métodos al final de la clase antes del module.exports
+
+  /**
+   * Contar total de publicaciones
+   * @returns {number} Total de publicaciones
+   */
+  static async count() {
+    try {
+      const [result] = await pool.execute('SELECT COUNT(*) as total FROM Publicaciones');
+      return result[0].total;
+    } catch (error) {
+      console.error('Error al contar publicaciones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Contar publicaciones por estado
+   * @param {string} estado Estado de las publicaciones (borrador/publicado/archivado)
+   * @returns {number} Total de publicaciones con el estado especificado
+   */
+  static async countByEstado(estado) {
+    try {
+      const [result] = await pool.execute(
+        'SELECT COUNT(*) as total FROM Publicaciones WHERE Estado = ?',
+        [estado]
+      );
+      return result[0].total;
+    } catch (error) {
+      console.error('Error al contar publicaciones por estado:', error);
+      throw error;
+    }
+  }
+
 }
 
 module.exports = Publicacion;
