@@ -41,12 +41,6 @@ async function runMigrations() {
           )
         `);
 
-                console.log('Creando tabla auth_user...');
-        await pool.query(`
-          CREATE USER 'priscila'@'localhost' IDENTIFIED BY 'Node2010';
-GRANT ALL PRIVILEGES ON educcorp_educs.* TO 'priscila'@'localhost';
-FLUSH PRIVILEGES;
-        `);
         // Crear tabla Administrador
         console.log('Creando tabla Administrador...');
         await pool.query(`

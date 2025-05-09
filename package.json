@@ -2,11 +2,13 @@
   "name": "educstation-backend",
   "version": "1.0.0",
   "main": "src/index.js",
-"scripts": {
-  "start": "node src/index.js",
-  "dev": "nodemon src/index.js",
-  "migrate": "node migrations.js"
-},
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "node migrations.js",
+    "add-user": "node add-user.js",
+    "setup-railway": "node setup-railway.js"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
