@@ -53,11 +53,9 @@ const createPublicacion = async (req, res) => {
     
     const { titulo, contenido, resumen, estado, categorias } = req.body;
     
-    // Obtener ID del administrador del token (ahora usando userId en lugar de id)
-    const id_administrador = req.user.userId;
+    // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
+    const id_administrador = 10; // ID del administrador Gregorio Sanchez
     
-    // Log para depuración
-    console.log('Usuario en el token:', req.user);
     console.log('ID administrador usado:', id_administrador);
     
     const publicacionData = {
@@ -95,11 +93,9 @@ const createPublicacionFromHTML = async (req, res) => {
     
     const { titulo, resumen, estado, categorias, htmlContent } = req.body;
     
-    // Obtener ID del administrador del token (ahora usando userId en lugar de id)
-    const id_administrador = req.user.userId;
+    // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
+    const id_administrador = 10; // ID del administrador Gregorio Sanchez
     
-    // Log para depuración
-    console.log('Usuario en el token:', req.user);
     console.log('ID administrador usado:', id_administrador);
     
     const publicacionData = {
@@ -140,11 +136,6 @@ const updatePublicacion = async (req, res) => {
       return res.status(404).json({ detail: 'Publicación no encontrada' });
     }
     
-    // Verificar que el usuario es el dueño de la publicación (opcional)
-    // if (publicacion.ID_administrador !== req.user.userId) {
-    //   return res.status(403).json({ detail: 'No autorizado para modificar esta publicación' });
-    // }
-    
     const publicacionData = {
       titulo,
       contenido,
@@ -176,11 +167,6 @@ const deletePublicacion = async (req, res) => {
     if (!publicacion) {
       return res.status(404).json({ detail: 'Publicación no encontrada' });
     }
-    
-    // Verificar que el usuario es el dueño de la publicación (opcional)
-    // if (publicacion.ID_administrador !== req.user.userId) {
-    //   return res.status(403).json({ detail: 'No autorizado para eliminar esta publicación' });
-    // }
     
     const deleted = await Publicacion.delete(id);
     

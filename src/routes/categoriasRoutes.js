@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const categoriasController = require('../controllers/categoriasController');
-const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
 
 // Validadores
@@ -15,9 +14,9 @@ router.get('/', categoriasController.getAllCategorias);
 router.get('/:id', categoriasController.getCategoriaById);
 router.get('/:id/publicaciones', categoriasController.getPublicacionesByCategoria);
 
-// Rutas protegidas (solo administradores)
-router.post('/', authenticateToken, isAdmin, categoriaValidator, categoriasController.createCategoria);
-router.put('/:id', authenticateToken, isAdmin, categoriaValidator, categoriasController.updateCategoria);
-router.delete('/:id', authenticateToken, isAdmin, categoriasController.deleteCategoria);
+// Rutas de creación y modificación (sin autenticación)
+router.post('/', categoriaValidator, categoriasController.createCategoria);
+router.put('/:id', categoriaValidator, categoriasController.updateCategoria);
+router.delete('/:id', categoriasController.deleteCategoria);
 
 module.exports = router;
