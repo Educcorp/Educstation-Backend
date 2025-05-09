@@ -42,10 +42,10 @@ async function runMigrations() {
             is_superuser BOOLEAN DEFAULT FALSE
           )
         `);
-
-    // Crear tabla Administrador
-    console.log('Creando tabla Administrador...');
-    await pool.query(`
+        
+        // Crear tabla Administrador
+        console.log('Creando tabla Administrador...');
+        await pool.query(`
           CREATE TABLE IF NOT EXISTS Administrador (
             ID_administrador INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             Nombre VARCHAR(50) NOT NULL,

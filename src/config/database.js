@@ -8,34 +8,63 @@ function createConnectionConfig() {
   // Si estamos en Railway (producción)
   if (process.env.MYSQL_URL) {
     // La URL tiene este formato: mysql://usuario:contraseña@host:puerto/nombrebd
-    const url = new URL(process.env.MYSQL_URL);
-    return {
-      host: url.hostname,
-      port: url.port,
-      user: url.username,
-      password: url.password,
-      database: url.pathname.substring(1), // Eliminar el '/' inicial
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    };
-  } 
+    try {
+      const url = new URL(process.env.MYSQL_URL);
+      return {
+        host: url.hostname,
+        port: url.port,
+        user: url.username,
+        password: url.password,
+        database: url.pathname.substring(1), // Eliminar el '/' inicial
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        connectTimeout: 60000, // 60 segundos
+        acquireTimeout: 60000
+      };
+    } catch (error) {
+      console.error('Error al parsear MYSQL_URL:', error.message);
+      console.error('Por favor verifica el formato de la URL de MySQL');
+      process.exit(1);
+    }
+  }
   // Si estamos en desarrollo local
   else {
     return {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'educcorp_educs',
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
+      queueLimit: 0,
+      connectTimeout: 60000, // 60 segundos
+      acquireTimeout: 60000
     };
   }
 }
 
-const pool = mysql.createPool(createConnectionConfig());
+// Creación del pool de conexiones con manejo de errores
+let pool;
+try {
+  pool = mysql.createPool(createConnectionConfig());
+
+  // Registrar eventos del pool
+  pool.on('connection', () => {
+    console.log('Nueva conexión establecida con la base de datos');
+  });
+
+  pool.on('error', (err) => {
+    console.error('Error en el pool de conexiones:', err.message);
+    if (err.code === 'ETIMEDOUT') {
+      console.error('Tiempo de conexión agotado. Verifica que el servidor MySQL esté accesible.');
+    }
+  });
+} catch (error) {
+  console.error('Error al crear el pool de conexiones:', error.message);
+  process.exit(1);
+}
 
 // Función de prueba de conexión
 async function testConnection() {
@@ -46,6 +75,22 @@ async function testConnection() {
     return true;
   } catch (error) {
     console.error('Error al conectar a la base de datos:', error.message);
+
+    // Proporcionar información adicional según el tipo de error
+    if (error.code === 'ETIMEDOUT') {
+      console.error('Tiempo de espera agotado. Verifica:');
+      console.error('1. Que el servidor MySQL esté en ejecución');
+      console.error('2. Que la dirección y puerto sean correctos');
+      console.error('3. Que no haya un firewall bloqueando la conexión');
+      if (process.env.MYSQL_URL) {
+        console.error('4. Si estás usando Railway, verifica que tu IP esté en la lista blanca');
+      }
+    } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.error('Acceso denegado. Verifica tu nombre de usuario y contraseña.');
+    } else if (error.code === 'ER_BAD_DB_ERROR') {
+      console.error('Base de datos no encontrada. Ejecuta "npm run migrate" para crearla.');
+    }
+
     return false;
   }
 }

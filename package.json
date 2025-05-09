@@ -5,7 +5,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "migrate": "node migrations.js"
+    "migrate": "node migrations.js",
+    "add-user": "node add-user.js",
+    "setup-railway": "node setup-railway.js",
+    "test-connection": "node test-connection.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -17,16 +20,9 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.2",
-    "mysql2": "^3.3.1",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "uuid": "^11.1.0"
+    "mysql2": "^3.3.1"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
   }
 }
