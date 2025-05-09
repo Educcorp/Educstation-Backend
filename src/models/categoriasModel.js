@@ -1,3 +1,5 @@
+// src/models/categoriasModel.js - Versión mejorada
+
 const { pool } = require('../config/database');
 
 class Categoria {
@@ -38,6 +40,24 @@ class Categoria {
       return rows;
     } catch (error) {
       console.error('Error al obtener categorías:', error);
+      throw error;
+    }
+  }
+
+  // Obtener todas las categorías con conteo de publicaciones
+  static async getAllWithPostCount() {
+    try {
+      const [rows] = await pool.execute(`
+        SELECT c.*, COUNT(pc.ID_publicacion) as post_count
+        FROM Categorias c
+        LEFT JOIN Publicaciones_Categorias pc ON c.ID_categoria = pc.ID_categoria
+        LEFT JOIN Publicaciones p ON pc.ID_publicacion = p.ID_publicaciones AND p.Estado = 'publicado'
+        GROUP BY c.ID_categoria
+        ORDER BY c.Nombre_categoria
+      `);
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener categorías con conteo:', error);
       throw error;
     }
   }
@@ -109,19 +129,14 @@ class Categoria {
     }
   }
 
-  /**
-   * Obtener publicaciones por categoría con paginación
-   * @param {number} id ID de la categoría
-   * @param {number} limit Límite de resultados
-   * @param {number} offset Offset para paginación
-   * @returns {Array} Lista de publicaciones que pertenecen a la categoría
-   */
-  static async getPublicacionesPaginated(id, limit = 10, offset = 0) {
+  // Obtener publicaciones paginadas por categoría
+  static async getPublicacionesPaginated(id, limit, offset) {
     try {
       const [rows] = await pool.execute(
-        `SELECT p.* 
+        `SELECT p.*, a.Nombre as NombreAdmin 
          FROM Publicaciones p
          JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+         JOIN Administrador a ON p.ID_administrador = a.ID_administrador
          WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'
          ORDER BY p.Fecha_creacion DESC
          LIMIT ? OFFSET ?`,
@@ -129,54 +144,24 @@ class Categoria {
       );
       return rows;
     } catch (error) {
-      console.error('Error al obtener publicaciones por categoría con paginación:', error);
+      console.error('Error al obtener publicaciones paginadas:', error);
       throw error;
     }
   }
 
-  /**
-   * Contar publicaciones por categoría
-   * @param {number} id ID de la categoría
-   * @returns {number} Total de publicaciones que pertenecen a la categoría
-   */
+  // Contar total de publicaciones por categoría
   static async countPublicaciones(id) {
     try {
-      const [result] = await pool.execute(
-        `SELECT COUNT(*) as total 
+      const [rows] = await pool.execute(
+        `SELECT COUNT(*) as total
          FROM Publicaciones p
          JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
          WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'`,
         [id]
       );
-      return result[0].total;
+      return rows[0].total;
     } catch (error) {
-      console.error('Error al contar publicaciones por categoría:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener categorías populares ordenadas por cantidad de publicaciones
-   * @param {number} limit Número máximo de categorías a retornar
-   * @returns {Array} Lista de categorías populares con conteo de publicaciones
-   */
-  static async getPopularCategories(limit = 5) {
-    try {
-      const [rows] = await pool.execute(
-        `SELECT c.ID_categoria, c.Nombre_categoria, c.Descripcion, 
-                COUNT(pc.ID_publicacion) as total_publicaciones
-         FROM Categorias c
-         LEFT JOIN Publicaciones_Categorias pc ON c.ID_categoria = pc.ID_categoria
-         LEFT JOIN Publicaciones p ON pc.ID_publicacion = p.ID_publicaciones 
-                                   AND p.Estado = 'publicado'
-         GROUP BY c.ID_categoria
-         ORDER BY total_publicaciones DESC
-         LIMIT ?`,
-        [limit]
-      );
-      return rows;
-    } catch (error) {
-      console.error('Error al obtener categorías populares:', error);
+      console.error('Error al contar publicaciones:', error);
       throw error;
     }
   }
