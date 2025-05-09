@@ -25,17 +25,17 @@ const register = async (req, res) => {
     }
 
     // Crear usuario
-    const userId = await User.create({ 
-      username, 
-      email, 
-      password, 
-      first_name, 
-      last_name 
+    const userId = await User.create({
+      username,
+      email,
+      password,
+      first_name,
+      last_name
     });
 
     // Obtener datos del usuario creado
     const user = await User.findById(userId);
-    
+
     res.status(201).json({
       id: user.id,
       username: user.username,
@@ -84,7 +84,7 @@ const login = async (req, res) => {
 const refreshToken = async (req, res) => {
   try {
     const { refresh } = req.body;
-    
+
     if (!refresh) {
       return res.status(400).json({ detail: 'Se requiere token de refresco' });
     }
@@ -118,11 +118,11 @@ const refreshToken = async (req, res) => {
 const getUserDetails = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    
+
     if (!user) {
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
-    
+
     res.json({
       id: user.id,
       username: user.username,
@@ -137,9 +137,31 @@ const getUserDetails = async (req, res) => {
   }
 };
 
+// Validar disponibilidad de nombre de usuario
+const checkUsernameAvailability = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    if (!username) {
+      return res.status(400).json({ detail: 'Se requiere un nombre de usuario' });
+    }
+
+    const existingUser = await User.findByUsername(username);
+
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'El nombre de usuario ya está en uso' : 'El nombre de usuario está disponible'
+    });
+  } catch (error) {
+    console.error('Error al verificar disponibilidad de usuario:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   register,
   login,
   refreshToken,
-  getUserDetails
+  getUserDetails,
+  checkUsernameAvailability
 };
