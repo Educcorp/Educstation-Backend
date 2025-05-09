@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const compression = require('compression');
 const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
+const publicacionesRoutes = require('./routes/publicacionesRoutes');
+const categoriasRoutes = require('./routes/categoriasRoutes');
 
 // Función para ejecutar migraciones
 async function runMigrations() {
@@ -213,6 +215,8 @@ app.use((req, res, next) => {
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/publicaciones', publicacionesRoutes);
+app.use('/api/categorias', categoriasRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
