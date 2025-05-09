@@ -7,7 +7,8 @@
     "dev": "nodemon src/index.js",
     "migrate": "node migrations.js",
     "add-user": "node add-user.js",
-    "setup-railway": "node setup-railway.js"
+    "setup-railway": "node setup-railway.js",
+    "test-connection": "node test-connection.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
