@@ -270,11 +270,152 @@ const getComentarios = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Búsqueda simple de publicaciones
+ * @route   GET /api/publicaciones/search
+ * @access  Público
+ */
+const searchPublicaciones = async (req, res) => {
+    try {
+        const { term, page = 1, limit = 10 } = req.query;
+
+        if (!term) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Se requiere un término de búsqueda'
+            });
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        // Realizar búsqueda
+        const publicaciones = await Publicacion.search(term, parseInt(limit), offset);
+
+        // Obtener total para paginación
+        const total = await Publicacion.countSearchResults(term);
+
+        res.json({
+            status: 'success',
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(total / limit),
+            data: publicaciones
+        });
+    } catch (error) {
+        console.error('Error en búsqueda de publicaciones:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error en el servidor al buscar publicaciones'
+        });
+    }
+};
+
+/**
+ * @desc    Búsqueda avanzada de publicaciones
+ * @route   GET /api/publicaciones/search/advanced
+ * @access  Público
+ */
+const advancedSearchPublicaciones = async (req, res) => {
+    try {
+        const {
+            term,
+            categorias,
+            fechaDesde,
+            fechaHasta,
+            estado = 'publicado',
+            orderBy = 'Fecha_creacion',
+            orderDir = 'DESC',
+            page = 1,
+            limit = 10
+        } = req.query;
+
+        // Convertir a números
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+
+        // Calcular offset
+        const offset = (pageNum - 1) * limitNum;
+
+        // Procesar categorías (pueden venir como string o array)
+        let categoriasArray = categorias;
+        if (categorias && !Array.isArray(categorias)) {
+            if (categorias.includes(',')) {
+                categoriasArray = categorias.split(',').map(Number);
+            } else {
+                categoriasArray = [parseInt(categorias)];
+            }
+        }
+
+        // Criterios de búsqueda
+        const criteria = {
+            term,
+            categorias: categoriasArray,
+            fechaDesde,
+            fechaHasta,
+            estado,
+            orderBy,
+            orderDir,
+            limit: limitNum,
+            offset
+        };
+
+        // Realizar búsqueda avanzada
+        const publicaciones = await Publicacion.advancedSearch(criteria);
+
+        // Obtener el total para la paginación
+        const total = await Publicacion.countAdvancedSearchResults(criteria);
+
+        res.json({
+            status: 'success',
+            total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(total / limitNum),
+            data: publicaciones
+        });
+    } catch (error) {
+        console.error('Error en búsqueda avanzada:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error en el servidor al realizar búsqueda avanzada'
+        });
+    }
+};
+
+// Método para contar publicaciones (total o por estado)
+const countPublicaciones = async (req, res) => {
+    try {
+        const { estado } = req.query;
+
+        let total;
+        if (estado) {
+            total = await Publicacion.countByEstado(estado);
+        } else {
+            total = await Publicacion.count();
+        }
+
+        res.json({
+            status: 'success',
+            data: { total }
+        });
+    } catch (error) {
+        console.error('Error al contar publicaciones:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error en el servidor al contar publicaciones'
+        });
+    }
+};
+
 module.exports = {
     getAllPublicaciones,
     getPublicacionById,
     createPublicacion,
     updatePublicacion,
     deletePublicacion,
-    getComentarios
+    getComentarios,
+    searchPublicaciones,
+    advancedSearchPublicaciones,
+    countPublicaciones
 };
