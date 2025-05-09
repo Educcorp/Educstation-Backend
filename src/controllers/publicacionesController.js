@@ -53,8 +53,12 @@ const createPublicacion = async (req, res) => {
     
     const { titulo, contenido, resumen, estado, categorias } = req.body;
     
-    // Obtener ID del administrador del token (asumiendo que está disponible en req.user)
-    const id_administrador = req.user.id;
+    // Obtener ID del administrador del token (ahora usando userId en lugar de id)
+    const id_administrador = req.user.userId;
+    
+    // Log para depuración
+    console.log('Usuario en el token:', req.user);
+    console.log('ID administrador usado:', id_administrador);
     
     const publicacionData = {
       titulo,
@@ -72,8 +76,8 @@ const createPublicacion = async (req, res) => {
       message: 'Publicación creada exitosamente'
     });
   } catch (error) {
-    console.error('Error al crear publicación:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    console.error('Error detallado al crear publicación:', error);
+    res.status(500).json({ detail: 'Error en el servidor', error: error.message });
   }
 };
 
@@ -91,8 +95,12 @@ const createPublicacionFromHTML = async (req, res) => {
     
     const { titulo, resumen, estado, categorias, htmlContent } = req.body;
     
-    // Obtener ID del administrador del token
-    const id_administrador = req.user.id;
+    // Obtener ID del administrador del token (ahora usando userId en lugar de id)
+    const id_administrador = req.user.userId;
+    
+    // Log para depuración
+    console.log('Usuario en el token:', req.user);
+    console.log('ID administrador usado:', id_administrador);
     
     const publicacionData = {
       titulo,
@@ -110,8 +118,8 @@ const createPublicacionFromHTML = async (req, res) => {
       message: 'Publicación creada exitosamente a partir del HTML'
     });
   } catch (error) {
-    console.error('Error al crear publicación desde HTML:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    console.error('Error detallado al crear publicación desde HTML:', error);
+    res.status(500).json({ detail: 'Error en el servidor', error: error.message });
   }
 };
 
@@ -133,7 +141,7 @@ const updatePublicacion = async (req, res) => {
     }
     
     // Verificar que el usuario es el dueño de la publicación (opcional)
-    // if (publicacion.ID_administrador !== req.user.id) {
+    // if (publicacion.ID_administrador !== req.user.userId) {
     //   return res.status(403).json({ detail: 'No autorizado para modificar esta publicación' });
     // }
     
@@ -170,7 +178,7 @@ const deletePublicacion = async (req, res) => {
     }
     
     // Verificar que el usuario es el dueño de la publicación (opcional)
-    // if (publicacion.ID_administrador !== req.user.id) {
+    // if (publicacion.ID_administrador !== req.user.userId) {
     //   return res.status(403).json({ detail: 'No autorizado para eliminar esta publicación' });
     // }
     
