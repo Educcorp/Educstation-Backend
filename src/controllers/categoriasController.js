@@ -1,36 +1,36 @@
+// src/controllers/categoriasController.js - Versión mejorada
+
 const Categoria = require('../models/categoriasModel');
 const { validationResult } = require('express-validator');
 
-/**
- * @desc    Obtener todas las categorías
- * @route   GET /api/categorias
- * @access  Público
- * @returns {Array} Lista de todas las categorías
- */
+// Obtener todas las categorías
 const getAllCategorias = async (req, res) => {
   try {
-    const categorias = await Categoria.getAll();
+    // Añadir soporte para parámetros de consulta
+    const { conConteo = false } = req.query;
+
+    let categorias;
+    if (conConteo === 'true') {
+      categorias = await Categoria.getAllWithPostCount();
+    } else {
+      categorias = await Categoria.getAll();
+    }
+
     res.json({
-      status: 'success',
+      success: true,
       count: categorias.length,
       data: categorias
     });
   } catch (error) {
     console.error('Error al obtener categorías:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error en el servidor al obtener las categorías'
+      success: false,
+      detail: 'Error en el servidor al obtener las categorías'
     });
   }
 };
 
-/**
- * @desc    Obtener una categoría por ID
- * @route   GET /api/categorias/:id
- * @access  Público
- * @param   {string} req.params.id - ID de la categoría
- * @returns {Object} Datos de la categoría solicitada
- */
+// Obtener una categoría por ID
 const getCategoriaById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -38,39 +38,65 @@ const getCategoriaById = async (req, res) => {
 
     if (!categoria) {
       return res.status(404).json({
-        status: 'error',
-        message: 'Categoría no encontrada'
+        success: false,
+        detail: 'Categoría no encontrada'
       });
     }
 
     res.json({
-      status: 'success',
+      success: true,
       data: categoria
     });
   } catch (error) {
     console.error('Error al obtener categoría:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error en el servidor al obtener la categoría'
+      success: false,
+      detail: 'Error en el servidor'
     });
   }
 };
 
-/**
- * @desc    Crear una nueva categoría
- * @route   POST /api/categorias
- * @access  Privado - Solo Administradores
- * @param   {string} req.body.nombre - Nombre de la categoría
- * @param   {string} req.body.descripcion - Descripción de la categoría
- * @returns {Object} Datos de la categoría creada
- */
+// Obtener una categoría por Slug (nueva función)
+const getCategoriaBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    // Convertir el slug a un formato de nombre de categoría
+    // Ejemplo: "tecnicas-de-estudio" -> buscar algo como "Técnicas de Estudio"
+    const nombreCategoria = slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    const categoria = await Categoria.findByName(nombreCategoria);
+
+    if (!categoria) {
+      return res.status(404).json({
+        success: false,
+        detail: 'Categoría no encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: categoria
+    });
+  } catch (error) {
+    console.error('Error al obtener categoría por slug:', error);
+    res.status(500).json({
+      success: false,
+      detail: 'Error en el servidor'
+    });
+  }
+};
+
+// Crear una nueva categoría
 const createCategoria = async (req, res) => {
   try {
-    // Validar errores de express-validator
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        status: 'error',
+        success: false,
         errors: errors.array()
       });
     }
@@ -81,8 +107,8 @@ const createCategoria = async (req, res) => {
     const existingCategoria = await Categoria.findByName(nombre);
     if (existingCategoria) {
       return res.status(400).json({
-        status: 'error',
-        message: 'Ya existe una categoría con ese nombre'
+        success: false,
+        detail: 'Ya existe una categoría con ese nombre'
       });
     }
 
@@ -90,35 +116,25 @@ const createCategoria = async (req, res) => {
     const newCategoria = await Categoria.findById(categoriaId);
 
     res.status(201).json({
-      status: 'success',
-      message: 'Categoría creada exitosamente',
+      success: true,
       data: newCategoria
     });
   } catch (error) {
     console.error('Error al crear categoría:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error en el servidor al crear la categoría'
+      success: false,
+      detail: 'Error en el servidor al crear la categoría'
     });
   }
 };
 
-/**
- * @desc    Actualizar una categoría existente
- * @route   PUT /api/categorias/:id
- * @access  Privado - Solo Administradores
- * @param   {string} req.params.id - ID de la categoría a actualizar
- * @param   {string} req.body.nombre - Nuevo nombre de la categoría
- * @param   {string} req.body.descripcion - Nueva descripción de la categoría
- * @returns {Object} Datos de la categoría actualizada
- */
+// Actualizar una categoría
 const updateCategoria = async (req, res) => {
   try {
-    // Validar errores de express-validator
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        status: 'error',
+        success: false,
         errors: errors.array()
       });
     }
@@ -130,8 +146,8 @@ const updateCategoria = async (req, res) => {
     const categoria = await Categoria.findById(id);
     if (!categoria) {
       return res.status(404).json({
-        status: 'error',
-        message: 'Categoría no encontrada'
+        success: false,
+        detail: 'Categoría no encontrada'
       });
     }
 
@@ -140,8 +156,8 @@ const updateCategoria = async (req, res) => {
       const existingCategoria = await Categoria.findByName(nombre);
       if (existingCategoria) {
         return res.status(400).json({
-          status: 'error',
-          message: 'Ya existe otra categoría con ese nombre'
+          success: false,
+          detail: 'Ya existe otra categoría con ese nombre'
         });
       }
     }
@@ -151,32 +167,25 @@ const updateCategoria = async (req, res) => {
     if (success) {
       const updatedCategoria = await Categoria.findById(id);
       res.json({
-        status: 'success',
-        message: 'Categoría actualizada exitosamente',
+        success: true,
         data: updatedCategoria
       });
     } else {
       res.status(500).json({
-        status: 'error',
-        message: 'No se pudo actualizar la categoría'
+        success: false,
+        detail: 'No se pudo actualizar la categoría'
       });
     }
   } catch (error) {
     console.error('Error al actualizar categoría:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error en el servidor al actualizar la categoría'
+      success: false,
+      detail: 'Error en el servidor al actualizar la categoría'
     });
   }
 };
 
-/**
- * @desc    Eliminar una categoría
- * @route   DELETE /api/categorias/:id
- * @access  Privado - Solo Administradores
- * @param   {string} req.params.id - ID de la categoría a eliminar
- * @returns {Object} Mensaje de confirmación
- */
+// Eliminar una categoría
 const deleteCategoria = async (req, res) => {
   try {
     const { id } = req.params;
@@ -185,8 +194,17 @@ const deleteCategoria = async (req, res) => {
     const categoria = await Categoria.findById(id);
     if (!categoria) {
       return res.status(404).json({
-        status: 'error',
-        message: 'Categoría no encontrada'
+        success: false,
+        detail: 'Categoría no encontrada'
+      });
+    }
+
+    // Verificar si hay publicaciones asociadas a esta categoría
+    const publicaciones = await Categoria.getPublicaciones(id);
+    if (publicaciones.length > 0) {
+      return res.status(400).json({
+        success: false,
+        detail: 'No se puede eliminar la categoría porque tiene publicaciones asociadas'
       });
     }
 
@@ -194,56 +212,65 @@ const deleteCategoria = async (req, res) => {
 
     if (success) {
       res.json({
-        status: 'success',
-        message: 'Categoría eliminada correctamente'
+        success: true,
+        detail: 'Categoría eliminada correctamente'
       });
     } else {
       res.status(500).json({
-        status: 'error',
-        message: 'No se pudo eliminar la categoría'
+        success: false,
+        detail: 'No se pudo eliminar la categoría'
       });
     }
   } catch (error) {
     console.error('Error al eliminar categoría:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error en el servidor al eliminar la categoría'
+      success: false,
+      detail: 'Error en el servidor al eliminar la categoría'
     });
   }
 };
 
-/**
- * @desc    Obtener publicaciones por categoría
- * @route   GET /api/categorias/:id/publicaciones
- * @access  Público
- * @param   {string} req.params.id - ID de la categoría
- * @returns {Array} Lista de publicaciones asociadas a la categoría
- */
+// Obtener publicaciones por categoría
 const getPublicacionesByCategoria = async (req, res) => {
   try {
     const { id } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    // Convertir a números enteros
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    // Calcular offset
+    const offset = (pageNum - 1) * limitNum;
 
     // Verificar si existe la categoría
     const categoria = await Categoria.findById(id);
     if (!categoria) {
       return res.status(404).json({
-        status: 'error',
-        message: 'Categoría no encontrada'
+        success: false,
+        detail: 'Categoría no encontrada'
       });
     }
 
-    const publicaciones = await Categoria.getPublicaciones(id);
+    // Obtener publicaciones paginadas
+    const publicaciones = await Categoria.getPublicacionesPaginated(id, limitNum, offset);
+
+    // Obtener el total de publicaciones para esta categoría
+    const totalPublicaciones = await Categoria.countPublicaciones(id);
+
     res.json({
-      status: 'success',
-      categoria: categoria.Nombre_categoria,
+      success: true,
       count: publicaciones.length,
+      total: totalPublicaciones,
+      totalPages: Math.ceil(totalPublicaciones / limitNum),
+      currentPage: pageNum,
       data: publicaciones
     });
   } catch (error) {
     console.error('Error al obtener publicaciones por categoría:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error en el servidor al obtener las publicaciones'
+      success: false,
+      detail: 'Error en el servidor al obtener las publicaciones'
     });
   }
 };
@@ -251,6 +278,7 @@ const getPublicacionesByCategoria = async (req, res) => {
 module.exports = {
   getAllCategorias,
   getCategoriaById,
+  getCategoriaBySlug,  // Nueva función
   createCategoria,
   updateCategoria,
   deleteCategoria,
