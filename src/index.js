@@ -7,6 +7,7 @@ const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
+const comentariosRoutes = require('./routes/comentariosRoutes');
 
 // Función para ejecutar migraciones
 async function runMigrations() {
@@ -265,3 +266,5 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (error) => {
   console.error('Promesa rechazada no manejada:', error);
 });
+app.use('/api/comentarios', comentariosRoutes);
+
