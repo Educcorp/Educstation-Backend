@@ -401,9 +401,14 @@ class Publicacion {
   }
 
   // Buscar publicaciones por título
+  // Buscar publicaciones por título
   static async searchByTitle(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.execute(
+      // Convertir límite y offset a números
+      limite = Number(limite);
+      offset = Number(offset);
+
+      const [rows] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
