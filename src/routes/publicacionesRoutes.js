@@ -14,4 +14,10 @@ router.post('/from-html', htmlPublicacionValidator, publicacionesController.crea
 router.put('/:id', publicacionValidator, publicacionesController.updatePublicacion);
 router.delete('/:id', publicacionesController.deletePublicacion);
 
+// Rutas de búsqueda específica
+router.get('/search/title', publicacionesController.searchByTitle);
+router.get('/search/content', publicacionesController.searchByContent);
+router.get('/search/tags', publicacionesController.searchByTags);
+router.get('/search/advanced', publicacionesController.advancedSearch);
+
 module.exports = router; 
