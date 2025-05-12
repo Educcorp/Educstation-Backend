@@ -221,7 +221,7 @@ class Publicacion {
   // Buscar publicaciones
   static async search(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.execute(
+      const [rows] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
          FROM Publicaciones p
          JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -241,7 +241,7 @@ class Publicacion {
   // Buscar publicaciones por título
   static async searchByTitle(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.execute(
+      const [rows] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -261,7 +261,7 @@ class Publicacion {
   // Buscar publicaciones por contenido
   static async searchByContent(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.execute(
+      const [rows] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -281,7 +281,7 @@ class Publicacion {
   // Buscar publicaciones por etiquetas/categorías
   static async searchByTags(categoryIds, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.execute(
+      const [rows] = await pool.query(
         `SELECT DISTINCT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -428,7 +428,7 @@ class Publicacion {
   // Buscar publicaciones por contenido
   static async searchByContent(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.execute(
+      const [rows] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
