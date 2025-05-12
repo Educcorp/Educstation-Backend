@@ -9,7 +9,7 @@ const getAllPublicaciones = async (req, res) => {
     const limite = req.query.limite ? parseInt(req.query.limite) : 10;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const estado = req.query.estado || null;
-    
+
     const publicaciones = await Publicacion.getAll(limite, offset, estado);
     res.json(publicaciones);
   } catch (error) {
@@ -23,15 +23,15 @@ const getPublicacionById = async (req, res) => {
   try {
     const { id } = req.params;
     const publicacion = await Publicacion.findById(id);
-    
+
     if (!publicacion) {
       return res.status(404).json({ detail: 'Publicación no encontrada' });
     }
-    
+
     // Obtener categorías e imágenes asociadas
     const categorias = await Publicacion.getCategorias(id);
     const imagenes = await Publicacion.getImagenes(id);
-    
+
     res.json({
       ...publicacion,
       categorias,
@@ -50,14 +50,14 @@ const createPublicacion = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { titulo, contenido, resumen, estado, categorias } = req.body;
-    
+
     // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
     const id_administrador = 10; // ID del administrador Gregorio Sanchez
-    
+
     console.log('ID administrador usado:', id_administrador);
-    
+
     const publicacionData = {
       titulo,
       contenido,
@@ -66,9 +66,9 @@ const createPublicacion = async (req, res) => {
       id_administrador,
       categorias
     };
-    
+
     const publicacionId = await Publicacion.create(publicacionData);
-    
+
     res.status(201).json({
       id: publicacionId,
       message: 'Publicación creada exitosamente'
@@ -86,18 +86,18 @@ const createPublicacionFromHTML = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     if (!req.body.htmlContent) {
       return res.status(400).json({ detail: 'El contenido HTML es requerido' });
     }
-    
+
     const { titulo, resumen, estado, categorias, htmlContent } = req.body;
-    
+
     // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
     const id_administrador = 10; // ID del administrador Gregorio Sanchez
-    
+
     console.log('ID administrador usado:', id_administrador);
-    
+
     const publicacionData = {
       titulo,
       contenido: htmlContent, // El contenido es directamente el HTML
@@ -106,9 +106,9 @@ const createPublicacionFromHTML = async (req, res) => {
       id_administrador,
       categorias
     };
-    
+
     const publicacionId = await Publicacion.create(publicacionData);
-    
+
     res.status(201).json({
       id: publicacionId,
       message: 'Publicación creada exitosamente a partir del HTML'
@@ -126,16 +126,16 @@ const updatePublicacion = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { id } = req.params;
     const { titulo, contenido, resumen, estado, categorias } = req.body;
-    
+
     // Verificar que la publicación existe
     const publicacion = await Publicacion.findById(id);
     if (!publicacion) {
       return res.status(404).json({ detail: 'Publicación no encontrada' });
     }
-    
+
     const publicacionData = {
       titulo,
       contenido,
@@ -143,9 +143,9 @@ const updatePublicacion = async (req, res) => {
       estado,
       categorias
     };
-    
+
     const updated = await Publicacion.update(id, publicacionData);
-    
+
     if (updated) {
       res.json({ message: 'Publicación actualizada exitosamente' });
     } else {
@@ -161,15 +161,15 @@ const updatePublicacion = async (req, res) => {
 const deletePublicacion = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Verificar que la publicación existe
     const publicacion = await Publicacion.findById(id);
     if (!publicacion) {
       return res.status(404).json({ detail: 'Publicación no encontrada' });
     }
-    
+
     const deleted = await Publicacion.delete(id);
-    
+
     if (deleted) {
       res.json({ message: 'Publicación eliminada exitosamente' });
     } else {
@@ -187,11 +187,11 @@ const searchPublicaciones = async (req, res) => {
     const { term } = req.query;
     const limite = req.query.limite ? parseInt(req.query.limite) : 10;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    
+
     if (!term) {
       return res.status(400).json({ detail: 'Término de búsqueda requerido' });
     }
-    
+
     const results = await Publicacion.search(term, limite, offset);
     res.json(results);
   } catch (error) {
@@ -200,6 +200,107 @@ const searchPublicaciones = async (req, res) => {
   }
 };
 
+// Buscar publicaciones por título
+const searchByTitle = async (req, res) => {
+  try {
+    const { term } = req.query;
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+    if (!term) {
+      return res.status(400).json({ detail: 'Término de búsqueda requerido' });
+    }
+
+    const results = await Publicacion.searchByTitle(term, limite, offset);
+    res.json(results);
+  } catch (error) {
+    console.error('Error al buscar publicaciones por título:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
+// Buscar publicaciones por contenido
+const searchByContent = async (req, res) => {
+  try {
+    const { term } = req.query;
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+    if (!term) {
+      return res.status(400).json({ detail: 'Término de búsqueda requerido' });
+    }
+
+    const results = await Publicacion.searchByContent(term, limite, offset);
+    res.json(results);
+  } catch (error) {
+    console.error('Error al buscar publicaciones por contenido:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
+// Buscar publicaciones por etiquetas/categorías
+const searchByTags = async (req, res) => {
+  try {
+    const { categorias } = req.query;
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+    if (!categorias) {
+      return res.status(400).json({ detail: 'Se requiere al menos una categoría' });
+    }
+
+    // Convertir string de categorías a array de IDs
+    const categoryIds = categorias.split(',').map(id => parseInt(id));
+
+    if (categoryIds.length === 0) {
+      return res.status(400).json({ detail: 'Formato inválido de categorías' });
+    }
+
+    const results = await Publicacion.searchByTags(categoryIds, limite, offset);
+    res.json(results);
+  } catch (error) {
+    console.error('Error al buscar publicaciones por etiquetas:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
+// Búsqueda avanzada
+const advancedSearch = async (req, res) => {
+  try {
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+    // Parámetros de búsqueda
+    const criteria = {
+      titulo: req.query.titulo || null,
+      contenido: req.query.contenido || null,
+      fechaDesde: req.query.fechaDesde || null,
+      fechaHasta: req.query.fechaHasta || null,
+      estado: req.query.estado || null,
+      ordenarPor: req.query.ordenarPor || null
+    };
+
+    // Procesar categorías si existen
+    if (req.query.categorias) {
+      criteria.categorias = req.query.categorias.split(',').map(id => parseInt(id));
+    }
+
+    // Validar que haya al menos un criterio de búsqueda
+    const hasCriteria = Object.values(criteria).some(val => val !== null);
+    if (!hasCriteria) {
+      return res.status(400).json({ detail: 'Se requiere al menos un criterio de búsqueda' });
+    }
+
+    const results = await Publicacion.advancedSearch(criteria, limite, offset);
+    res.json(results);
+  } catch (error) {
+    console.error('Error en búsqueda avanzada:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
+
+
 module.exports = {
   getAllPublicaciones,
   getPublicacionById,
@@ -207,5 +308,9 @@ module.exports = {
   createPublicacionFromHTML,
   updatePublicacion,
   deletePublicacion,
-  searchPublicaciones
-}; 
+  searchPublicaciones,
+  searchByTitle,
+  searchByContent,
+  searchByTags,
+  advancedSearch
+};
