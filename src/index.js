@@ -7,7 +7,7 @@ const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
-
+const comentariosRoutes = require('./routes/comentariosRoutes');
 
 
 // Función para ejecutar migraciones
@@ -219,7 +219,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
-
+app.use('/api/comentarios', comentariosRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
