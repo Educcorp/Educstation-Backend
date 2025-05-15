@@ -290,6 +290,25 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Eliminar cuenta del usuario autenticado
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ detail: 'No autenticado' });
+    }
+    const deleted = await User.delete(userId);
+    if (deleted) {
+      return res.status(200).json({ detail: 'Cuenta eliminada correctamente' });
+    } else {
+      return res.status(404).json({ detail: 'Usuario no encontrado' });
+    }
+  } catch (error) {
+    console.error('Error al eliminar cuenta:', error);
+    res.status(500).json({ detail: 'Error al eliminar la cuenta' });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -297,5 +316,6 @@ module.exports = {
   getUserDetails,
   checkUsernameAvailability,
   requestPasswordReset,
-  resetPassword
+  resetPassword,
+  deleteAccount
 };
