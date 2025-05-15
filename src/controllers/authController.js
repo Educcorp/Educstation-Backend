@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
+const { sendPasswordResetEmail } = require('../utils/emailUtils');
 
 // Registro de usuario
 const register = async (req, res) => {
@@ -186,9 +187,9 @@ const requestPasswordReset = async (req, res) => {
     const user = await User.findByEmail(email);
     
     if (!user) {
-      // No revelamos si el email existe o no por seguridad
-      return res.status(200).json({ 
-        detail: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.' 
+      // Cambiamos para devolver un error específico cuando el correo no existe
+      return res.status(404).json({ 
+        detail: 'No existe ninguna cuenta con este correo electrónico. Por favor, verifica que has introducido el correo correcto.' 
       });
     }
 
@@ -199,12 +200,27 @@ const requestPasswordReset = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    // En un entorno real enviaríamos un email con el link
-    // Por ahora solo devolvemos el token para pruebas
+    // Crear URL de restablecimiento (frontend)
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+
+    // Enviar el correo (real o simulado)
+    await sendPasswordResetEmail(
+      email, 
+      user.first_name, 
+      resetUrl
+    );
+
+    // Devolver respuesta con información adicional en modo desarrollo
     res.status(200).json({
       detail: 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.',
-      // Solo incluimos el token en desarrollo
-      token: process.env.NODE_ENV === 'development' ? resetToken : undefined
+      // En desarrollo, proporcionamos información adicional para pruebas
+      ...(process.env.NODE_ENV !== 'production' && {
+        debug_info: {
+          token: resetToken,
+          reset_url: resetUrl,
+          note: 'Esta información solo se muestra en modo desarrollo'
+        }
+      })
     });
   } catch (error) {
     console.error('Error al solicitar restablecimiento de contraseña:', error);
