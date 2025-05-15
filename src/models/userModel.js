@@ -93,6 +93,20 @@ class User {
       throw error;
     }
   }
+
+  // Eliminar usuario por ID
+  static async delete(id) {
+    try {
+      const [result] = await pool.execute(
+        'DELETE FROM auth_user WHERE id = ?',
+        [id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = User;
