@@ -2,17 +2,60 @@ const { body } = require('express-validator');
 
 // Validador para registro de usuario
 const registerValidator = [
-  body('username').trim().notEmpty().withMessage('El nombre de usuario es requerido'),
-  body('email').isEmail().withMessage('Correo electrónico inválido'),
-  body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
-  body('first_name').trim().notEmpty().withMessage('El nombre es requerido'),
-  body('last_name').trim().notEmpty().withMessage('El apellido es requerido')
+  body('username')
+    .trim()
+    .isLength({ min: 3 })
+    .withMessage('El nombre de usuario debe tener al menos 3 caracteres')
+    .matches(/^[a-z0-9._]+$/)
+    .withMessage('El nombre de usuario solo puede contener letras minúsculas, números, punto y guion bajo'),
+  body('email')
+    .isEmail()
+    .withMessage('Debe proporcionar un correo electrónico válido'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('La contraseña debe tener al menos 8 caracteres'),
+  body('password2')
+    .custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Las contraseñas no coinciden');
+      }
+      return true;
+    }),
+  body('first_name')
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es requerido'),
+  body('last_name')
+    .trim()
+    .notEmpty()
+    .withMessage('El apellido es requerido')
 ];
 
 // Validador para inicio de sesión
 const loginValidator = [
-  body('username').trim().notEmpty().withMessage('El nombre de usuario es requerido'),
-  body('password').notEmpty().withMessage('La contraseña es requerida')
+  body('username')
+    .notEmpty()
+    .withMessage('El nombre de usuario es requerido'),
+  body('password')
+    .notEmpty()
+    .withMessage('La contraseña es requerida')
+];
+
+// Validador para solicitud de restablecimiento de contraseña
+const passwordResetRequestValidator = [
+  body('email')
+    .isEmail()
+    .withMessage('Debe proporcionar un correo electrónico válido')
+];
+
+// Validador para confirmación de restablecimiento de contraseña
+const passwordResetConfirmValidator = [
+  body('token')
+    .notEmpty()
+    .withMessage('El token es requerido'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('La contraseña debe tener al menos 8 caracteres')
 ];
 
 // Validador para publicaciones
@@ -60,6 +103,8 @@ const htmlPublicacionValidator = [
 module.exports = {
   registerValidator,
   loginValidator,
+  passwordResetRequestValidator,
+  passwordResetConfirmValidator,
   publicacionValidator,
   htmlPublicacionValidator
 };

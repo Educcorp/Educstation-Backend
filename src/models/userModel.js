@@ -16,6 +16,20 @@ class User {
     }
   }
 
+  // Buscar usuario por email
+  static async findByEmail(email) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM auth_user WHERE email = ?',
+        [email]
+      );
+      return rows[0];
+    } catch (error) {
+      console.error('Error al buscar usuario por email:', error);
+      throw error;
+    }
+  }
+
   // Buscar usuario por ID
   static async findById(id) {
     try {
@@ -59,6 +73,25 @@ class User {
   // Verificar contraseña
   static async comparePassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
+  }
+
+  // Actualizar contraseña de usuario
+  static async updatePassword(userId, newPassword) {
+    try {
+      // Generar hash de la contraseña
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+      
+      const [result] = await pool.execute(
+        'UPDATE auth_user SET password = ? WHERE id = ?',
+        [hashedPassword, userId]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error al actualizar contraseña:', error);
+      throw error;
+    }
   }
 }
 
