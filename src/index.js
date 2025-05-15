@@ -8,6 +8,8 @@ const authRoutes = require('./routes/authRoutes');
 const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 
+
+
 // Función para ejecutar migraciones
 async function runMigrations() {
   try {
@@ -217,6 +219,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
+
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
