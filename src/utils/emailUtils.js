@@ -15,13 +15,13 @@ let transporter = null;
 const setupTransporter = () => {
   // SOLUCIÓN TEMPORAL: Siempre usar el modo simulado hasta que se configuren correctamente las credenciales
   // Cuando estés listo para usar un servicio real, elimina esta línea y descomenta el código debajo
-  const forceMockMode = true;
+  const forceMockMode = false;
   
   // Verificar si tenemos credenciales configuradas
   const hasCredentials = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
   
   // Si estamos en producción Y tenemos credenciales, usamos el servicio real
-  if (!forceMockMode && process.env.NODE_ENV === 'production' && hasCredentials) {
+  if (!forceMockMode && hasCredentials) {
     console.log('Configurando transporter de correo real');
     // Configuración para producción (ejemplo: usando SendGrid)
     transporter = nodemailer.createTransport({
