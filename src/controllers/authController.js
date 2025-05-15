@@ -203,15 +203,8 @@ const requestPasswordReset = async (req, res) => {
     // Crear URL de restablecimiento (frontend)
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
 
-    // Enviar el correo (real o simulado)
-    await sendPasswordResetEmail(
-      email, 
-      user.first_name, 
-      resetUrl
-    );
-
-    // Devolver respuesta con información adicional en modo desarrollo
-    res.status(200).json({
+    // Preparar información de respuesta
+    const responseData = {
       detail: 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.',
       // En desarrollo, proporcionamos información adicional para pruebas
       ...(process.env.NODE_ENV !== 'production' && {
@@ -221,7 +214,32 @@ const requestPasswordReset = async (req, res) => {
           note: 'Esta información solo se muestra en modo desarrollo'
         }
       })
-    });
+    };
+
+    try {
+      // Intentar enviar el correo (real o simulado)
+      await sendPasswordResetEmail(
+        email, 
+        user.first_name, 
+        resetUrl
+      );
+    } catch (emailError) {
+      // Si falla el envío de correo, registramos el error pero no interrumpimos el flujo
+      console.error('Error al enviar correo de restablecimiento:', emailError);
+      
+      // Añadir información sobre el error de envío en desarrollo
+      if (process.env.NODE_ENV !== 'production') {
+        responseData.email_error = {
+          message: 'Hubo un problema al enviar el correo, pero el token se generó correctamente.',
+          error: emailError.message
+        };
+      }
+    }
+
+    // Devolver respuesta exitosa incluso si falló el envío de correo
+    // El usuario podrá usar el token en desarrollo, y en producción se mostrará el mensaje genérico
+    return res.status(200).json(responseData);
+    
   } catch (error) {
     console.error('Error al solicitar restablecimiento de contraseña:', error);
     res.status(500).json({ detail: 'Error en el servidor' });
