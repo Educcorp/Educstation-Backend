@@ -13,20 +13,32 @@ let transporter = null;
 
 // Configurar el transporter de nodemailer
 const setupTransporter = () => {
-  // En un entorno de desarrollo, usamos una cuenta de prueba de ethereal
-  // En producción, esto debería ser reemplazado con un proveedor real como SendGrid, Mailgun, etc.
-  if (process.env.NODE_ENV === 'production') {
+  // SOLUCIÓN TEMPORAL: Siempre usar el modo simulado hasta que se configuren correctamente las credenciales
+  // Cuando estés listo para usar un servicio real, elimina esta línea y descomenta el código debajo
+  const forceMockMode = true;
+  
+  // Verificar si tenemos credenciales configuradas
+  const hasCredentials = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
+  
+  // Si estamos en producción Y tenemos credenciales, usamos el servicio real
+  if (!forceMockMode && process.env.NODE_ENV === 'production' && hasCredentials) {
+    console.log('Configurando transporter de correo real');
     // Configuración para producción (ejemplo: usando SendGrid)
     transporter = nodemailer.createTransport({
-      service: 'SendGrid', // o cualquier otro servicio
+      service: process.env.EMAIL_SERVICE || 'SendGrid',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
     });
   } else {
-    // En desarrollo, solo simulamos el envío
-    console.log('Modo de desarrollo: Los correos serán simulados');
+    // En desarrollo o si no hay credenciales en producción, simulamos el envío
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('ADVERTENCIA: Usando modo simulado de correo en producción.');
+    } else {
+      console.log('Modo de desarrollo: Los correos serán simulados');
+    }
+    
     transporter = {
       sendMail: async (mailOptions) => {
         console.log('=== CORREO SIMULADO ===');
