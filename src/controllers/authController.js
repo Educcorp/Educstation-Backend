@@ -1,6 +1,10 @@
 const User = require('../models/userModel');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwtUtils');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { pool } = require('../config/database');
 
 // Registro de usuario
 const register = async (req, res) => {
@@ -169,10 +173,95 @@ const checkUsernameAvailability = async (req, res) => {
   }
 };
 
+// Solicitar restablecimiento de contraseña
+const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ detail: 'Se requiere un correo electrónico' });
+    }
+
+    // Buscar usuario por email
+    const user = await User.findByEmail(email);
+    
+    if (!user) {
+      // No revelamos si el email existe o no por seguridad
+      return res.status(200).json({ 
+        detail: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.' 
+      });
+    }
+
+    // Generar token JWT con expiración de 1 hora
+    const resetToken = jwt.sign(
+      { userId: user.id, action: 'password_reset' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // En un entorno real enviaríamos un email con el link
+    // Por ahora solo devolvemos el token para pruebas
+    res.status(200).json({
+      detail: 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.',
+      // Solo incluimos el token en desarrollo
+      token: process.env.NODE_ENV === 'development' ? resetToken : undefined
+    });
+  } catch (error) {
+    console.error('Error al solicitar restablecimiento de contraseña:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
+// Restablecer contraseña con token
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ 
+        detail: 'Se requiere un token válido y una nueva contraseña' 
+      });
+    }
+
+    // Verificar el token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Verificar que sea un token de restablecimiento de contraseña
+      if (decoded.action !== 'password_reset') {
+        throw new Error('Token inválido');
+      }
+    } catch (error) {
+      return res.status(400).json({ 
+        detail: 'El token es inválido o ha expirado. Solicita un nuevo enlace de restablecimiento.' 
+      });
+    }
+
+    // Buscar al usuario
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ detail: 'Usuario no encontrado' });
+    }
+
+    // Actualizar la contraseña en la base de datos
+    await User.updatePassword(decoded.userId, password);
+
+    res.status(200).json({ 
+      detail: 'Contraseña restablecida con éxito. Ahora puedes iniciar sesión con tu nueva contraseña.' 
+    });
+  } catch (error) {
+    console.error('Error al restablecer contraseña:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   register,
   login,
   refreshToken,
   getUserDetails,
-  checkUsernameAvailability
+  checkUsernameAvailability,
+  requestPasswordReset,
+  resetPassword
 };
