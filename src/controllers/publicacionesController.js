@@ -51,28 +51,58 @@ const createPublicacion = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Log detallado de la solicitud
+    console.log('Datos recibidos para crear publicación:', req.body);
+
     const { titulo, contenido, resumen, estado, categorias } = req.body;
+
+    // Validar que los campos requeridos estén presentes
+    if (!titulo || !contenido) {
+      return res.status(400).json({ detail: 'El título y el contenido son obligatorios' });
+    }
 
     // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
     const id_administrador = 10; // ID del administrador Gregorio Sanchez
 
     console.log('ID administrador usado:', id_administrador);
 
+    // Validar categorías
+    let categoriasArray = [];
+    if (categorias && Array.isArray(categorias)) {
+      categoriasArray = categorias.filter(id => typeof id === 'number' && id > 0);
+      console.log('Categorías validadas:', categoriasArray);
+    } else {
+      console.log('No se proporcionaron categorías válidas');
+    }
+
     const publicacionData = {
       titulo,
       contenido,
-      resumen,
-      estado,
+      resumen: resumen || titulo.substring(0, 100), // Si no hay resumen, usar parte del título
+      estado: estado || 'borrador',
       id_administrador,
-      categorias
+      categorias: categoriasArray
     };
 
-    const publicacionId = await Publicacion.create(publicacionData);
+    console.log('Datos a guardar en la base de datos:', publicacionData);
 
-    res.status(201).json({
-      id: publicacionId,
-      message: 'Publicación creada exitosamente'
-    });
+    try {
+      const publicacionId = await Publicacion.create(publicacionData);
+      console.log('Publicación creada con ID:', publicacionId);
+
+      res.status(201).json({
+        id: publicacionId,
+        message: 'Publicación creada exitosamente'
+      });
+    } catch (dbError) {
+      console.error('Error al guardar en la base de datos:', dbError);
+      res.status(500).json({ 
+        detail: 'Error al guardar en la base de datos',
+        error: dbError.message,
+        sqlState: dbError.sqlState,
+        sqlMessage: dbError.sqlMessage
+      });
+    }
   } catch (error) {
     console.error('Error detallado al crear publicación:', error);
     res.status(500).json({ detail: 'Error en el servidor', error: error.message });
@@ -87,32 +117,62 @@ const createPublicacionFromHTML = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Log detallado de la solicitud
+    console.log('Datos recibidos para crear publicación HTML:', req.body);
+
     if (!req.body.htmlContent) {
       return res.status(400).json({ detail: 'El contenido HTML es requerido' });
     }
 
     const { titulo, resumen, estado, categorias, htmlContent } = req.body;
 
+    // Validar que los campos requeridos estén presentes
+    if (!titulo || !htmlContent) {
+      return res.status(400).json({ detail: 'El título y el contenido HTML son obligatorios' });
+    }
+
     // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
     const id_administrador = 10; // ID del administrador Gregorio Sanchez
 
     console.log('ID administrador usado:', id_administrador);
 
+    // Validar categorías
+    let categoriasArray = [];
+    if (categorias && Array.isArray(categorias)) {
+      categoriasArray = categorias.filter(id => typeof id === 'number' && id > 0);
+      console.log('Categorías validadas:', categoriasArray);
+    } else {
+      console.log('No se proporcionaron categorías válidas');
+    }
+
     const publicacionData = {
       titulo,
       contenido: htmlContent, // El contenido es directamente el HTML
-      resumen,
-      estado,
+      resumen: resumen || titulo.substring(0, 100), // Si no hay resumen, usar parte del título
+      estado: estado || 'borrador',
       id_administrador,
-      categorias
+      categorias: categoriasArray
     };
 
-    const publicacionId = await Publicacion.create(publicacionData);
+    console.log('Datos a guardar en la base de datos (HTML):', publicacionData);
 
-    res.status(201).json({
-      id: publicacionId,
-      message: 'Publicación creada exitosamente a partir del HTML'
-    });
+    try {
+      const publicacionId = await Publicacion.create(publicacionData);
+      console.log('Publicación HTML creada con ID:', publicacionId);
+
+      res.status(201).json({
+        id: publicacionId,
+        message: 'Publicación creada exitosamente a partir del HTML'
+      });
+    } catch (dbError) {
+      console.error('Error al guardar publicación HTML en la base de datos:', dbError);
+      res.status(500).json({ 
+        detail: 'Error al guardar en la base de datos',
+        error: dbError.message,
+        sqlState: dbError.sqlState,
+        sqlMessage: dbError.sqlMessage
+      });
+    }
   } catch (error) {
     console.error('Error detallado al crear publicación desde HTML:', error);
     res.status(500).json({ detail: 'Error en el servidor', error: error.message });
@@ -298,8 +358,6 @@ const advancedSearch = async (req, res) => {
     res.status(500).json({ detail: 'Error en el servidor' });
   }
 };
-
-
 
 module.exports = {
   getAllPublicaciones,
