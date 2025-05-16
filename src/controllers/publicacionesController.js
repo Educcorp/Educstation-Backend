@@ -18,6 +18,23 @@ const getAllPublicaciones = async (req, res) => {
   }
 };
 
+// Obtener las últimas publicaciones (endpoint simplificado y alternativo)
+const getLatestPublicaciones = async (req, res) => {
+  try {
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    
+    // Usar una consulta directa más simple para evitar problemas
+    // Siempre con estado 'publicado'
+    const publicaciones = await Publicacion.getLatest(limite);
+    
+    console.log(`Retornando ${publicaciones.length} publicaciones desde getLatestPublicaciones`);
+    res.json(publicaciones);
+  } catch (error) {
+    console.error('Error al obtener últimas publicaciones:', error);
+    res.status(500).json({ detail: 'Error al obtener las últimas publicaciones' });
+  }
+};
+
 // Obtener publicación por ID
 const getPublicacionById = async (req, res) => {
   try {
@@ -393,6 +410,7 @@ const advancedSearch = async (req, res) => {
 
 module.exports = {
   getAllPublicaciones,
+  getLatestPublicaciones,
   getPublicacionById,
   createPublicacion,
   createPublicacionFromHTML,

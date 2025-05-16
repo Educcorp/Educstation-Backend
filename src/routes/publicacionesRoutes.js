@@ -26,6 +26,18 @@ const idValidator = [
 router.get('/', publicacionesController.getAllPublicaciones);
 
 /**
+ * @api {get} /api/publicaciones/latest Obtener las últimas publicaciones
+ * @apiName GetLatestPublicaciones
+ * @apiGroup Publicaciones
+ * @apiDescription Retorna las últimas publicaciones publicadas (método alternativo y simplificado)
+ * 
+ * @apiQuery {Number} [limite=10] Cantidad de resultados a retornar
+ * 
+ * @apiSuccess {Object[]} publicaciones Lista de las últimas publicaciones
+ */
+router.get('/latest', publicacionesController.getLatestPublicaciones);
+
+/**
  * @api {get} /api/publicaciones/search Búsqueda general
  * @apiName SearchPublicaciones
  * @apiGroup Publicaciones

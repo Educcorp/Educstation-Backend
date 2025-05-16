@@ -56,6 +56,45 @@ class Publicacion {
     }
   }
 
+  // Obtener las últimas publicaciones (versión simplificada)
+  static async getLatest(limite = 10) {
+    try {
+      // Consulta simplificada solo para publicaciones recientes en estado publicado
+      // para servir como alternativa cuando falla el método principal
+      const query = `
+        SELECT p.*, a.Nombre as NombreAdmin 
+        FROM Publicaciones p
+        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+        WHERE p.Estado = 'publicado'
+        ORDER BY p.Fecha_creacion DESC 
+        LIMIT ?
+      `;
+
+      console.log(`Ejecutando consulta getLatest con límite ${limite}`);
+      const [publicaciones] = await pool.execute(query, [limite]);
+      
+      // Intentamos obtener categorías, pero si falla no interrumpimos
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          try {
+            const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+            publicacion.categorias = categorias || [];
+          } catch (err) {
+            console.error(`Error al obtener categorías para publicación ${publicacion.ID_publicaciones}:`, err);
+            publicacion.categorias = []; // Categorías vacías en caso de error
+          }
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones recientes`);
+      return publicaciones;
+    } catch (error) {
+      console.error('Error en getLatest:', error);
+      // Si incluso esta consulta falla, devolvemos un array vacío
+      return [];
+    }
+  }
+
   // Crear una nueva publicación
   static async create(publicacionData) {
     const { titulo, contenido, resumen, estado, id_administrador } = publicacionData;
