@@ -62,10 +62,15 @@ const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Buscar usuario
-    const user = await User.findByUsername(username);
+    // Buscar usuario por username o email
+    let user = await User.findByUsername(username);
+
+    // Si no encontró por username, intenta buscar por email
     if (!user) {
-      return res.status(401).json({ detail: 'Credenciales inválidas' });
+      user = await User.findByEmail(username);
+      if (!user) {
+        return res.status(401).json({ detail: 'Credenciales inválidas' });
+      }
     }
 
     // Verificar contraseña
@@ -185,11 +190,11 @@ const requestPasswordReset = async (req, res) => {
 
     // Buscar usuario por email
     const user = await User.findByEmail(email);
-    
+
     if (!user) {
       // Cambiamos para devolver un error específico cuando el correo no existe
-      return res.status(404).json({ 
-        detail: 'No existe ninguna cuenta con este correo electrónico. Por favor, verifica que has introducido el correo correcto.' 
+      return res.status(404).json({
+        detail: 'No existe ninguna cuenta con este correo electrónico. Por favor, verifica que has introducido el correo correcto.'
       });
     }
 
@@ -219,14 +224,14 @@ const requestPasswordReset = async (req, res) => {
     try {
       // Intentar enviar el correo (real o simulado)
       await sendPasswordResetEmail(
-        email, 
-        user.first_name, 
+        email,
+        user.first_name,
         resetUrl
       );
     } catch (emailError) {
       // Si falla el envío de correo, registramos el error pero no interrumpimos el flujo
       console.error('Error al enviar correo de restablecimiento:', emailError);
-      
+
       // Añadir información sobre el error de envío en desarrollo
       if (process.env.NODE_ENV !== 'production') {
         responseData.email_error = {
@@ -239,7 +244,7 @@ const requestPasswordReset = async (req, res) => {
     // Devolver respuesta exitosa incluso si falló el envío de correo
     // El usuario podrá usar el token en desarrollo, y en producción se mostrará el mensaje genérico
     return res.status(200).json(responseData);
-    
+
   } catch (error) {
     console.error('Error al solicitar restablecimiento de contraseña:', error);
     res.status(500).json({ detail: 'Error en el servidor' });
@@ -252,8 +257,8 @@ const resetPassword = async (req, res) => {
     const { token, password } = req.body;
 
     if (!token || !password) {
-      return res.status(400).json({ 
-        detail: 'Se requiere un token válido y una nueva contraseña' 
+      return res.status(400).json({
+        detail: 'Se requiere un token válido y una nueva contraseña'
       });
     }
 
@@ -261,14 +266,14 @@ const resetPassword = async (req, res) => {
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Verificar que sea un token de restablecimiento de contraseña
       if (decoded.action !== 'password_reset') {
         throw new Error('Token inválido');
       }
     } catch (error) {
-      return res.status(400).json({ 
-        detail: 'El token es inválido o ha expirado. Solicita un nuevo enlace de restablecimiento.' 
+      return res.status(400).json({
+        detail: 'El token es inválido o ha expirado. Solicita un nuevo enlace de restablecimiento.'
       });
     }
 
@@ -281,8 +286,8 @@ const resetPassword = async (req, res) => {
     // Actualizar la contraseña en la base de datos
     await User.updatePassword(decoded.userId, password);
 
-    res.status(200).json({ 
-      detail: 'Contraseña restablecida con éxito. Ahora puedes iniciar sesión con tu nueva contraseña.' 
+    res.status(200).json({
+      detail: 'Contraseña restablecida con éxito. Ahora puedes iniciar sesión con tu nueva contraseña.'
     });
   } catch (error) {
     console.error('Error al restablecer contraseña:', error);
