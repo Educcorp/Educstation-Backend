@@ -9,8 +9,15 @@ if (fs.existsSync('.env')) {
 }
 
 // Crear contenido del archivo .env
-const envContent = `# URL de MySQL para Railway (sustituye con tu URL real)
-MYSQL_URL=mysql://grego:Msi123456@metro.proxy.rlwy.net:58999/educcorp_educs
+const envContent = `# URL de MySQL para Railway (producción)
+MYSQL_URL=mysql://root:afHXYXrlbmdRYzFFfpSjNZNlRRiytxHU@metro.proxy.rlwy.net:58999/educcorp_educs
+
+# Configuración de base de datos local (desarrollo)
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=Node2010
+DB_NAME=educcorp_educs
 
 # Configuración de JWT
 JWT_SECRET=mysecretkey123456789
@@ -20,6 +27,12 @@ JWT_REFRESH_EXPIRES_IN=7d
 
 # Puerto del servidor
 PORT=3000
+
+# Frontend URL (para enlaces en correos, etc.)
+FRONTEND_URL=http://localhost:3002
+
+# CORS
+CORS_ORIGINS=http://localhost:3002,https://www.educstation.com,https://educstation.com
 `;
 
 // Escribir archivo .env

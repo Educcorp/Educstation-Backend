@@ -61,10 +61,26 @@ const createPublicacion = async (req, res) => {
       return res.status(400).json({ detail: 'El título y el contenido son obligatorios' });
     }
 
-    // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
-    const id_administrador = 10; // ID del administrador Gregorio Sanchez
-
-    console.log('ID administrador usado:', id_administrador);
+    // Usar el ID de administrador del middleware de autenticación
+    // Si no existe req.adminId, intentamos buscarlo o crearlo
+    let id_administrador;
+    if (req.adminId) {
+      id_administrador = req.adminId;
+      console.log('Usando ID administrador del middleware:', id_administrador);
+    } else {
+      // Intentamos obtener el administrador por el ID de usuario
+      const Administrador = require('../models/adminModel');
+      const admin = await Administrador.findByUserId(req.userId);
+      
+      if (!admin) {
+        return res.status(403).json({ 
+          detail: 'No tienes permisos para crear publicaciones. Contacta al administrador del sistema.'
+        });
+      }
+      
+      id_administrador = admin.ID_administrador;
+      console.log('ID administrador obtenido del modelo:', id_administrador);
+    }
 
     // Validar categorías
     let categoriasArray = [];
@@ -131,10 +147,26 @@ const createPublicacionFromHTML = async (req, res) => {
       return res.status(400).json({ detail: 'El título y el contenido HTML son obligatorios' });
     }
 
-    // Usar ID de administrador fijo (10) en lugar de obtenerlo del token
-    const id_administrador = 10; // ID del administrador Gregorio Sanchez
-
-    console.log('ID administrador usado:', id_administrador);
+    // Usar el ID de administrador del middleware de autenticación
+    // Si no existe req.adminId, intentamos buscarlo o crearlo
+    let id_administrador;
+    if (req.adminId) {
+      id_administrador = req.adminId;
+      console.log('Usando ID administrador del middleware:', id_administrador);
+    } else {
+      // Intentamos obtener el administrador por el ID de usuario
+      const Administrador = require('../models/adminModel');
+      const admin = await Administrador.findByUserId(req.userId);
+      
+      if (!admin) {
+        return res.status(403).json({ 
+          detail: 'No tienes permisos para crear publicaciones. Contacta al administrador del sistema.'
+        });
+      }
+      
+      id_administrador = admin.ID_administrador;
+      console.log('ID administrador obtenido del modelo:', id_administrador);
+    }
 
     // Validar categorías
     let categoriasArray = [];

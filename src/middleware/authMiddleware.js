@@ -1,5 +1,6 @@
 const { verifyAccessToken } = require('../utils/jwtUtils');
 const { pool } = require('../config/database');
+const Administrador = require('../models/adminModel');
 
 // Middleware para verificar autenticación
 const authenticateToken = (req, res, next) => {
@@ -33,18 +34,26 @@ const isAdmin = async (req, res, next) => {
     // Log para depuración
     console.log('Verificando permisos de admin para userId:', req.userId);
     
-    // Modificar para buscar en la tabla Administrador en lugar de auth_user
-    const [rows] = await pool.execute(
-      'SELECT * FROM Administrador WHERE ID_administrador = ?',
-      [req.userId]
-    );
+    // Verificar si el usuario es superusuario en auth_user
+    const isAdminUser = await Administrador.isAdmin(req.userId);
     
-    if (!rows.length) {
-      console.log('No se encontró administrador con ID:', req.userId);
+    if (!isAdminUser) {
+      console.log('El usuario no tiene permisos de administrador:', req.userId);
       return res.status(403).json({ detail: 'Acceso denegado - Se requiere permisos de administrador' });
     }
     
-    console.log('Administrador encontrado:', rows[0]);
+    // Buscar o crear el registro en la tabla Administrador
+    const admin = await Administrador.findByUserId(req.userId);
+    
+    if (!admin) {
+      console.log('No se pudo crear/encontrar administrador para el usuario:', req.userId);
+      return res.status(403).json({ detail: 'Error al verificar permisos de administrador' });
+    }
+    
+    // Guardar el ID de administrador para usarlo en los controladores
+    req.adminId = admin.ID_administrador;
+    console.log('Administrador encontrado/creado:', admin);
+    
     next();
   } catch (error) {
     console.error('Error detallado al verificar permisos de admin:', error);
