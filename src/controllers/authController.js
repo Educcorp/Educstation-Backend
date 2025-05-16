@@ -80,7 +80,9 @@ const login = async (req, res) => {
 
     res.json({
       access: accessToken,
-      refresh: refreshToken
+      refresh: refreshToken,
+      username: user.username,
+      is_superuser: user.is_superuser === 1
     });
   } catch (error) {
     console.error('Error en login:', error);
@@ -137,7 +139,8 @@ const getUserDetails = async (req, res) => {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
-      is_admin: user.is_staff === 1
+      is_admin: user.is_staff === 1,
+      is_superuser: user.is_superuser === 1
     });
   } catch (error) {
     console.error('Error al obtener detalles del usuario:', error);
