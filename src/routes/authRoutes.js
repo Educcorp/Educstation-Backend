@@ -20,4 +20,7 @@ router.get('/user/:username/check', authController.checkUsernameAvailability);
 router.post('/password-reset/', passwordResetRequestValidator, authController.requestPasswordReset);
 router.post('/password-reset/confirm/', passwordResetConfirmValidator, authController.resetPassword);
 
+// Eliminar cuenta del usuario autenticado
+router.delete('/user/', authenticateToken, authController.deleteAccount);
+
 module.exports = router;
