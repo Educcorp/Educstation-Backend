@@ -71,6 +71,9 @@ const publicacionValidator = [
     .trim()
     .isLength({ max: 500 }).withMessage('El resumen no puede exceder los 500 caracteres')
     .optional({ nullable: true }),
+  body('imagen_portada_html')
+    .optional({ nullable: true })
+    .isString().withMessage('La imagen portada HTML debe ser una cadena de texto'),
   body('estado')
     .isIn(['borrador', 'publicado', 'archivado']).withMessage('Estado inválido')
     .optional({ nullable: true }),
@@ -92,6 +95,9 @@ const htmlPublicacionValidator = [
     .trim()
     .isLength({ max: 500 }).withMessage('El resumen no puede exceder los 500 caracteres')
     .optional({ nullable: true }),
+  body('imagen_portada_html')
+    .optional({ nullable: true })
+    .isString().withMessage('La imagen portada HTML debe ser una cadena de texto'),
   body('estado')
     .isIn(['borrador', 'publicado', 'archivado']).withMessage('Estado inválido')
     .optional({ nullable: true }),

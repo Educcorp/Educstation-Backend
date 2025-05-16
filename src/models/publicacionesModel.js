@@ -97,7 +97,7 @@ class Publicacion {
 
   // Crear una nueva publicación
   static async create(publicacionData) {
-    const { titulo, contenido, resumen, estado, id_administrador } = publicacionData;
+    const { titulo, contenido, resumen, estado, id_administrador, imagen_portada_html } = publicacionData;
 
     try {
       const connection = await pool.getConnection();
@@ -108,9 +108,9 @@ class Publicacion {
         // Insertar publicación
         const [result] = await connection.execute(
           `INSERT INTO Publicaciones 
-           (Titulo, Contenido, Resumen, Estado, ID_administrador) 
-           VALUES (?, ?, ?, ?, ?)`,
-          [titulo, contenido, resumen, estado || 'borrador', id_administrador]
+           (Titulo, Contenido, Resumen, imagen_portada_html, Estado, ID_administrador) 
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [titulo, contenido, resumen, imagen_portada_html || null, estado || 'borrador', id_administrador]
         );
 
         const publicacionId = result.insertId;
@@ -139,7 +139,7 @@ class Publicacion {
 
   // Actualizar publicación
   static async update(id, publicacionData) {
-    const { titulo, contenido, resumen, estado } = publicacionData;
+    const { titulo, contenido, resumen, estado, imagen_portada_html } = publicacionData;
 
     try {
       const connection = await pool.getConnection();
@@ -165,9 +165,9 @@ class Publicacion {
         // Actualizar publicación
         const [result] = await connection.execute(
           `UPDATE Publicaciones 
-           SET Titulo = ?, Contenido = ?, Resumen = ?, Estado = ? 
+           SET Titulo = ?, Contenido = ?, Resumen = ?, imagen_portada_html = ?, Estado = ? 
            WHERE ID_publicaciones = ?`,
-          [titulo, contenido, resumen, estado, id]
+          [titulo, contenido, resumen, imagen_portada_html, estado, id]
         );
 
         // Actualizar categorías si se proporcionan
