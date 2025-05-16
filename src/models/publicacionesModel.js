@@ -21,6 +21,7 @@ class Publicacion {
   // Obtener todas las publicaciones
   static async getAll(limite = 10, offset = 0, estado = null) {
     try {
+      // Obtener las publicaciones con sus administradores
       let query = `
         SELECT p.*, a.Nombre as NombreAdmin 
         FROM Publicaciones p
@@ -37,8 +38,18 @@ class Publicacion {
       query += ' ORDER BY p.Fecha_creacion DESC LIMIT ? OFFSET ?';
       params.push(limite, offset);
 
-      const [rows] = await pool.execute(query, params);
-      return rows;
+      const [publicaciones] = await pool.execute(query, params);
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones con sus categorías`);
+      return publicaciones;
     } catch (error) {
       console.error('Error al obtener publicaciones:', error);
       throw error;
@@ -221,7 +232,7 @@ class Publicacion {
   // Buscar publicaciones
   static async search(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.query(
+      const [publicaciones] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
          FROM Publicaciones p
          JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -231,7 +242,17 @@ class Publicacion {
          LIMIT ? OFFSET ?`,
         [`%${term}%`, `%${term}%`, `%${term}%`, limite, offset]
       );
-      return rows;
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones por búsqueda general con sus categorías`);
+      return publicaciones;
     } catch (error) {
       console.error('Error al buscar publicaciones:', error);
       throw error;
@@ -241,7 +262,7 @@ class Publicacion {
   // Buscar publicaciones por título
   static async searchByTitle(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.query(
+      const [publicaciones] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -251,7 +272,17 @@ class Publicacion {
        LIMIT ? OFFSET ?`,
         [`%${term}%`, limite, offset]
       );
-      return rows;
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones por título con sus categorías`);
+      return publicaciones;
     } catch (error) {
       console.error('Error al buscar publicaciones por título:', error);
       throw error;
@@ -261,7 +292,7 @@ class Publicacion {
   // Buscar publicaciones por contenido
   static async searchByContent(term, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.query(
+      const [publicaciones] = await pool.query(
         `SELECT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -271,7 +302,17 @@ class Publicacion {
        LIMIT ? OFFSET ?`,
         [`%${term}%`, limite, offset]
       );
-      return rows;
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones por contenido con sus categorías`);
+      return publicaciones;
     } catch (error) {
       console.error('Error al buscar publicaciones por contenido:', error);
       throw error;
@@ -281,7 +322,7 @@ class Publicacion {
   // Buscar publicaciones por etiquetas/categorías
   static async searchByTags(categoryIds, limite = 10, offset = 0) {
     try {
-      const [rows] = await pool.query(
+      const [publicaciones] = await pool.query(
         `SELECT DISTINCT p.*, a.Nombre as NombreAdmin 
        FROM Publicaciones p
        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
@@ -292,7 +333,17 @@ class Publicacion {
        LIMIT ? OFFSET ?`,
         [categoryIds, limite, offset]
       );
-      return rows;
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones por categoría con sus categorías completas`);
+      return publicaciones;
     } catch (error) {
       console.error('Error al buscar publicaciones por etiquetas:', error);
       throw error;
@@ -392,181 +443,18 @@ class Publicacion {
         queryParams.push(criteria.categorias, limite, offset);
       }
 
-      const [rows] = await pool.query(query, queryParams);
-      return rows;
-    } catch (error) {
-      console.error('Error en búsqueda avanzada:', error);
-      throw error;
-    }
-  }
-
-  // Buscar publicaciones por título
-  // Buscar publicaciones por título
-  static async searchByTitle(term, limite = 10, offset = 0) {
-    try {
-      // Convertir límite y offset a números
-      limite = Number(limite);
-      offset = Number(offset);
-
-      const [rows] = await pool.query(
-        `SELECT p.*, a.Nombre as NombreAdmin 
-       FROM Publicaciones p
-       JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-       WHERE p.Titulo LIKE ? 
-         AND p.Estado = 'publicado'
-       ORDER BY p.Fecha_creacion DESC
-       LIMIT ? OFFSET ?`,
-        [`%${term}%`, limite, offset]
-      );
-      return rows;
-    } catch (error) {
-      console.error('Error al buscar publicaciones por título:', error);
-      throw error;
-    }
-  }
-
-  // Buscar publicaciones por contenido
-  static async searchByContent(term, limite = 10, offset = 0) {
-    try {
-      const [rows] = await pool.query(
-        `SELECT p.*, a.Nombre as NombreAdmin 
-       FROM Publicaciones p
-       JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-       WHERE p.Contenido LIKE ? 
-         AND p.Estado = 'publicado'
-       ORDER BY p.Fecha_creacion DESC
-       LIMIT ? OFFSET ?`,
-        [`%${term}%`, limite, offset]
-      );
-      return rows;
-    } catch (error) {
-      console.error('Error al buscar publicaciones por contenido:', error);
-      throw error;
-    }
-  }
-
-  // Buscar publicaciones por etiquetas/categorías
-  static async searchByTags(categoryIds, limite = 10, offset = 0) {
-    try {
-      // Convertir el array a string para la consulta IN
-      const placeholders = categoryIds.map(() => '?').join(',');
-
-      const [rows] = await pool.query(
-        `SELECT DISTINCT p.*, a.Nombre as NombreAdmin 
-       FROM Publicaciones p
-       JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-       JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
-       WHERE pc.ID_categoria IN (${placeholders}) 
-         AND p.Estado = 'publicado'
-       ORDER BY p.Fecha_creacion DESC
-       LIMIT ? OFFSET ?`,
-        [...categoryIds, limite, offset]
-      );
-      return rows;
-    } catch (error) {
-      console.error('Error al buscar publicaciones por etiquetas:', error);
-      throw error;
-    }
-  }
-
-  // Búsqueda avanzada con múltiples criterios
-  static async advancedSearch(criteria, limite = 10, offset = 0) {
-    try {
-      let queryParams = [];
-      let conditions = [];
-
-      // Título
-      if (criteria.titulo) {
-        conditions.push('p.Titulo LIKE ?');
-        queryParams.push(`%${criteria.titulo}%`);
-      }
-
-      // Contenido
-      if (criteria.contenido) {
-        conditions.push('p.Contenido LIKE ?');
-        queryParams.push(`%${criteria.contenido}%`);
-      }
-
-      // Fecha desde
-      if (criteria.fechaDesde) {
-        conditions.push('p.Fecha_creacion >= ?');
-        queryParams.push(criteria.fechaDesde);
-      }
-
-      // Fecha hasta
-      if (criteria.fechaHasta) {
-        conditions.push('p.Fecha_creacion <= ?');
-        queryParams.push(criteria.fechaHasta);
-      }
-
-      // Estado (si no se especifica, solo publicados)
-      if (criteria.estado) {
-        conditions.push('p.Estado = ?');
-        queryParams.push(criteria.estado);
-      } else {
-        conditions.push('p.Estado = "publicado"');
-      }
-
-      // Ordenamiento
-      let orderBy = 'p.Fecha_creacion DESC';
-      if (criteria.ordenarPor) {
-        switch (criteria.ordenarPor) {
-          case 'titulo_asc':
-            orderBy = 'p.Titulo ASC';
-            break;
-          case 'titulo_desc':
-            orderBy = 'p.Titulo DESC';
-            break;
-          case 'fecha_asc':
-            orderBy = 'p.Fecha_creacion ASC';
-            break;
-          case 'fecha_desc':
-            orderBy = 'p.Fecha_creacion DESC';
-            break;
+      const [publicaciones] = await pool.query(query, queryParams);
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
         }
       }
-
-      // Construir consulta
-      const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
-
-      // Consulta base sin categorías
-      let query = `
-      SELECT DISTINCT p.*, a.Nombre as NombreAdmin 
-      FROM Publicaciones p
-      JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-      ${whereClause}
-      ORDER BY ${orderBy}
-      LIMIT ? OFFSET ?
-    `;
-
-      // Añadir límite y offset a los parámetros
-      queryParams.push(limite, offset);
-
-      // Si hay categorías, construir una consulta diferente con JOIN
-      if (criteria.categorias && criteria.categorias.length > 0) {
-        // Convertir el array a string para la consulta IN
-        const catPlaceholders = criteria.categorias.map(() => '?').join(',');
-
-        query = `
-        SELECT DISTINCT p.*, a.Nombre as NombreAdmin 
-        FROM Publicaciones p
-        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-        JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
-        ${whereClause ? whereClause + ' AND' : 'WHERE'} pc.ID_categoria IN (${catPlaceholders})
-        ORDER BY ${orderBy}
-        LIMIT ? OFFSET ?
-      `;
-
-        // Remover el límite y offset para añadirlos después de las categorías
-        queryParams.pop();
-        queryParams.pop();
-
-        // Añadir categorías y luego límite/offset
-        queryParams.push(...criteria.categorias, limite, offset);
-      }
-
-      const [rows] = await pool.query(query, queryParams);
-      return rows;
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones por búsqueda avanzada con sus categorías`);
+      return publicaciones;
     } catch (error) {
       console.error('Error en búsqueda avanzada:', error);
       throw error;
