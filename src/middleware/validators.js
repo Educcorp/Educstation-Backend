@@ -100,11 +100,55 @@ const htmlPublicacionValidator = [
     .optional({ nullable: true })
 ];
 
+// Validador para creación de categorías
+const categoriaCreateValidator = [
+  body('nombre')
+    .trim()
+    .notEmpty().withMessage('El nombre de la categoría es requerido')
+    .isLength({ min: 3, max: 50 }).withMessage('El nombre debe tener entre 3 y 50 caracteres')
+    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/)
+    .withMessage('El nombre solo puede contener letras, números y espacios')
+    .customSanitizer(value => {
+      // Capitalizar primera letra de cada palabra
+      return value.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }),
+  body('descripcion')
+    .trim()
+    .notEmpty().withMessage('La descripción es requerida')
+    .isLength({ min: 10, max: 255 }).withMessage('La descripción debe tener entre 10 y 255 caracteres')
+];
+
+// Validador para actualización de categorías
+const categoriaUpdateValidator = [
+  body('nombre')
+    .optional()
+    .trim()
+    .notEmpty().withMessage('El nombre de la categoría es requerido')
+    .isLength({ min: 3, max: 50 }).withMessage('El nombre debe tener entre 3 y 50 caracteres')
+    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/)
+    .withMessage('El nombre solo puede contener letras, números y espacios')
+    .customSanitizer(value => {
+      // Capitalizar primera letra de cada palabra
+      return value.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }),
+  body('descripcion')
+    .optional()
+    .trim()
+    .notEmpty().withMessage('La descripción es requerida')
+    .isLength({ min: 10, max: 255 }).withMessage('La descripción debe tener entre 10 y 255 caracteres')
+];
+
 module.exports = {
   registerValidator,
   loginValidator,
   passwordResetRequestValidator,
   passwordResetConfirmValidator,
   publicacionValidator,
-  htmlPublicacionValidator
+  htmlPublicacionValidator,
+  categoriaCreateValidator,
+  categoriaUpdateValidator
 };

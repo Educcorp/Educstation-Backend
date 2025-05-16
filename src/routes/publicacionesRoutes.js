@@ -3,6 +3,7 @@ const router = express.Router();
 const publicacionesController = require('../controllers/publicacionesController');
 const { publicacionValidator, htmlPublicacionValidator } = require('../middleware/validators');
 const { param } = require('express-validator');
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
 // Validador para ID de publicación
 const idValidator = [
@@ -128,7 +129,7 @@ router.get('/:id', idValidator, publicacionesController.getPublicacionById);
  * 
  * @apiSuccess {Object} result Objeto con ID de la publicación creada y mensaje
  */
-router.post('/', publicacionValidator, publicacionesController.createPublicacion);
+router.post('/', authenticateToken, publicacionValidator, publicacionesController.createPublicacion);
 
 /**
  * @api {post} /api/publicaciones/from-html Crear publicación desde HTML
@@ -144,7 +145,7 @@ router.post('/', publicacionValidator, publicacionesController.createPublicacion
  * 
  * @apiSuccess {Object} result Objeto con ID de la publicación creada y mensaje
  */
-router.post('/from-html', htmlPublicacionValidator, publicacionesController.createPublicacionFromHTML);
+router.post('/from-html', authenticateToken, htmlPublicacionValidator, publicacionesController.createPublicacionFromHTML);
 
 /**
  * @api {put} /api/publicaciones/:id Actualizar publicación
@@ -161,7 +162,7 @@ router.post('/from-html', htmlPublicacionValidator, publicacionesController.crea
  * 
  * @apiSuccess {Object} message Mensaje de confirmación
  */
-router.put('/:id', [...idValidator, ...publicacionValidator], publicacionesController.updatePublicacion);
+router.put('/:id', authenticateToken, [...idValidator, ...publicacionValidator], publicacionesController.updatePublicacion);
 
 /**
  * @api {delete} /api/publicaciones/:id Eliminar publicación
@@ -173,6 +174,6 @@ router.put('/:id', [...idValidator, ...publicacionValidator], publicacionesContr
  * 
  * @apiSuccess {Object} message Mensaje de confirmación
  */
-router.delete('/:id', idValidator, publicacionesController.deletePublicacion);
+router.delete('/:id', authenticateToken, idValidator, publicacionesController.deletePublicacion);
 
 module.exports = router;

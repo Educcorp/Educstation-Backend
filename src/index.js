@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 const comentariosRoutes = require('./routes/comentariosRoutes');
+const chatbotRoutes = require('./routes/chatbotRoutes');
 
 
 // Función para ejecutar migraciones
@@ -220,6 +221,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {

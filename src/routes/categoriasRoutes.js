@@ -1,21 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const categoriasController = require('../controllers/categoriasController');
-const { body, param } = require('express-validator');
-
-/**
- * Validadores para categorías
- */
-const categoriaValidator = [
-  body('nombre')
-    .trim()
-    .notEmpty().withMessage('El nombre es requerido')
-    .isLength({ max: 50 }).withMessage('El nombre no puede exceder los 50 caracteres'),
-  body('descripcion')
-    .trim()
-    .notEmpty().withMessage('La descripción es requerida')
-    .isLength({ max: 255 }).withMessage('La descripción no puede exceder los 255 caracteres')
-];
+const { param, query } = require('express-validator');
+const { categoriaCreateValidator, categoriaUpdateValidator } = require('../middleware/validators');
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
 /**
  * Validador para ID de categoría
@@ -37,6 +25,36 @@ const idValidator = [
  * @apiSuccess {String} categorias.Descripcion Descripción de la categoría
  */
 router.get('/', categoriasController.getAllCategorias);
+
+/**
+ * @api {get} /api/categorias/search Buscar categorías
+ * @apiName SearchCategorias
+ * @apiGroup Categorias
+ * @apiDescription Busca categorías por nombre
+ * 
+ * @apiQuery {String} nombre Nombre o parte del nombre a buscar
+ * 
+ * @apiSuccess {Object[]} categorias Lista de categorías que coinciden con la búsqueda
+ */
+router.get('/search', [
+  query('nombre')
+    .optional()
+    .isString().withMessage('El nombre debe ser texto')
+    .trim()
+], categoriasController.searchCategorias);
+
+/**
+ * @api {get} /api/categorias/stats Obtener estadísticas de categorías
+ * @apiName GetCategoriasStats
+ * @apiGroup Categorias
+ * @apiDescription Obtiene estadísticas de las categorías, como el número de publicaciones en cada una
+ * 
+ * @apiSuccess {Object[]} stats Estadísticas de categorías
+ * @apiSuccess {Number} stats.ID_categoria ID de la categoría
+ * @apiSuccess {String} stats.Nombre_categoria Nombre de la categoría
+ * @apiSuccess {Number} stats.publicaciones_count Número de publicaciones en la categoría
+ */
+router.get('/stats', categoriasController.getCategoriaStats);
 
 /**
  * @api {get} /api/categorias/:id Obtener categoría por ID
@@ -86,7 +104,7 @@ router.get('/:id/publicaciones', idValidator, categoriasController.getPublicacio
  * @apiError {Object} errors Lista de errores de validación
  * @apiError {Object} error Error si ya existe una categoría con ese nombre
  */
-router.post('/', categoriaValidator, categoriasController.createCategoria);
+router.post('/', authenticateToken, isAdmin, categoriaCreateValidator, categoriasController.createCategoria);
 
 /**
  * @api {put} /api/categorias/:id Actualizar categoría
@@ -104,7 +122,7 @@ router.post('/', categoriaValidator, categoriasController.createCategoria);
  * @apiError {Object} error Error si la categoría no existe
  * @apiError {Object} error Error si ya existe otra categoría con ese nombre
  */
-router.put('/:id', [...idValidator, ...categoriaValidator], categoriasController.updateCategoria);
+router.put('/:id', authenticateToken, isAdmin, [...idValidator, ...categoriaUpdateValidator], categoriasController.updateCategoria);
 
 /**
  * @api {delete} /api/categorias/:id Eliminar categoría
@@ -118,6 +136,6 @@ router.put('/:id', [...idValidator, ...categoriaValidator], categoriasController
  * 
  * @apiError {Object} error Error si la categoría no existe
  */
-router.delete('/:id', idValidator, categoriasController.deleteCategoria);
+router.delete('/:id', authenticateToken, isAdmin, idValidator, categoriasController.deleteCategoria);
 
 module.exports = router;

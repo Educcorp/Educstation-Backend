@@ -2,6 +2,69 @@ const { pool } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 class Administrador {
+  // Buscar administrador por ID de usuario
+  static async findByUserId(userId) {
+    try {
+      // Primero verificamos si el usuario es superusuario
+      const [userRows] = await pool.execute(
+        'SELECT * FROM auth_user WHERE id = ? AND is_superuser = 1',
+        [userId]
+      );
+      
+      if (!userRows[0]) {
+        return null; // No es superusuario
+      }
+      
+      // Buscamos si ya existe un registro en la tabla Administrador
+      const [adminRows] = await pool.execute(
+        'SELECT * FROM Administrador WHERE Correo_electronico = ?',
+        [userRows[0].email]
+      );
+      
+      if (adminRows[0]) {
+        return {
+          ...adminRows[0],
+          auth_user_id: userRows[0].id
+        };
+      }
+      
+      // Si no existe, creamos un nuevo registro en la tabla Administrador
+      const [result] = await pool.execute(
+        'INSERT INTO Administrador (Nombre, Correo_electronico, Contraseña) VALUES (?, ?, ?)',
+        [
+          `${userRows[0].first_name} ${userRows[0].last_name}`,
+          userRows[0].email,
+          userRows[0].password // Usamos la misma contraseña hasheada
+        ]
+      );
+      
+      return {
+        ID_administrador: result.insertId,
+        Nombre: `${userRows[0].first_name} ${userRows[0].last_name}`,
+        Correo_electronico: userRows[0].email,
+        auth_user_id: userRows[0].id
+      };
+    } catch (error) {
+      console.error('Error al buscar/crear administrador:', error);
+      throw error;
+    }
+  }
+
+  // Verificar si un usuario es administrador
+  static async isAdmin(userId) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT is_superuser FROM auth_user WHERE id = ?',
+        [userId]
+      );
+      
+      return rows[0] && rows[0].is_superuser === 1;
+    } catch (error) {
+      console.error('Error al verificar si es administrador:', error);
+      throw error;
+    }
+  }
+
   // Buscar administrador por correo
   static async findByEmail(email) {
     try {
