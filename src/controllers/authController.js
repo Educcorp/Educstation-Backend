@@ -10,9 +10,17 @@ const { sendPasswordResetEmail } = require('../utils/emailUtils');
 // Registro de usuario
 const register = async (req, res) => {
   try {
-    // Validar errores
+    console.log('Recibida solicitud de registro:', {
+      username: req.body.username,
+      email: req.body.email,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name
+    });
+
+    // Validar errores de express-validator
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Errores de validación:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -20,16 +28,26 @@ const register = async (req, res) => {
 
     // Verificar si las contraseñas coinciden
     if (password !== password2) {
+      console.log('Error: Las contraseñas no coinciden');
       return res.status(400).json({ detail: "Las contraseñas no coinciden." });
     }
 
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findByUsername(username);
-    if (existingUser) {
+    // Verificar si el usuario ya existe por nombre de usuario
+    const existingUsername = await User.findByUsername(username);
+    if (existingUsername) {
+      console.log('Error: Nombre de usuario ya existe:', username);
       return res.status(400).json({ detail: "El nombre de usuario ya está en uso" });
     }
 
+    // Verificar si el usuario ya existe por email
+    const existingEmail = await User.findByEmail(email);
+    if (existingEmail) {
+      console.log('Error: Email ya existe:', email);
+      return res.status(400).json({ detail: "El correo electrónico ya está registrado" });
+    }
+
     // Crear usuario
+    console.log('Creando usuario...');
     const userId = await User.create({
       username,
       email,
@@ -40,6 +58,7 @@ const register = async (req, res) => {
 
     // Obtener datos del usuario creado
     const user = await User.findById(userId);
+    console.log('Usuario creado con éxito, ID:', userId);
 
     res.status(201).json({
       id: user.id,
@@ -50,10 +69,20 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en registro:', error);
+
+    // Errores específicos de la base de datos
     if (error.code === 'ER_DUP_ENTRY') {
+      const errorMessage = error.message || '';
+      if (errorMessage.includes('email')) {
+        return res.status(400).json({ detail: 'El email ya está registrado' });
+      } else if (errorMessage.includes('username')) {
+        return res.status(400).json({ detail: 'El nombre de usuario ya está en uso' });
+      }
       return res.status(400).json({ detail: 'El email o nombre de usuario ya está registrado' });
     }
-    res.status(500).json({ detail: 'Error en el servidor' });
+
+    // Otros errores del servidor
+    res.status(500).json({ detail: 'Error en el servidor al procesar el registro' });
   }
 };
 
