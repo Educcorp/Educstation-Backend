@@ -3,15 +3,7 @@
   "version": "1.0.0",
   "description": "Backend para EducStation",
   "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "migrate": "node migrations.js",
-    "add-user": "node add-user.js",
-    "setup-railway": "node setup-railway.js",
-    "test-connection": "node test-connection.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+    "scripts": {    "start": "node src/index.js",    "dev": "nodemon src/index.js",    "migrate": "node migrations.js",    "add-user": "node add-user.js",    "setup-railway": "node setup-railway.js",    "test-connection": "node test-connection.js",    "ensure-dirs": "node ensure-dirs.js",    "add-avatar-field": "node add-avatar-migration.js",    "setup-profile": "npm run ensure-dirs && npm run add-avatar-field",    "test": "echo \"Error: no test specified\" && exit 1"  },
   "keywords": [
     "educación",
     "blog",
