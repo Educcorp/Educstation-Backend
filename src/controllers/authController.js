@@ -237,8 +237,15 @@ const requestPasswordReset = async (req, res) => {
       { expiresIn: '1h' }
     );
 
+    // Normalizar la URL base para evitar doble slash
+    let baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Eliminar la barra final si existe
+    baseUrl = baseUrl.replace(/\/$/, '');
+    
     // Crear URL de restablecimiento (frontend)
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+    const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
+    
+    console.log('URL de restablecimiento generada:', resetUrl);
 
     // Preparar información de respuesta
     const responseData = {
@@ -287,6 +294,11 @@ const requestPasswordReset = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
+    
+    console.log('Solicitud de restablecimiento de contraseña recibida:', {
+      tokenLength: token ? token.length : 'no proporcionado',
+      passwordLength: password ? password.length : 'no proporcionada'
+    });
 
     if (!token || !password) {
       return res.status(400).json({
@@ -298,12 +310,20 @@ const resetPassword = async (req, res) => {
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token verificado correctamente, datos decodificados:', {
+        userId: decoded.userId,
+        action: decoded.action,
+        exp: decoded.exp,
+        iat: decoded.iat
+      });
 
       // Verificar que sea un token de restablecimiento de contraseña
       if (decoded.action !== 'password_reset') {
-        throw new Error('Token inválido');
+        console.log('Token con acción incorrecta:', decoded.action);
+        throw new Error('Token inválido, acción incorrecta');
       }
     } catch (error) {
+      console.error('Error al verificar token:', error.message);
       return res.status(400).json({
         detail: 'El token es inválido o ha expirado. Solicita un nuevo enlace de restablecimiento.'
       });
@@ -312,11 +332,28 @@ const resetPassword = async (req, res) => {
     // Buscar al usuario
     const user = await User.findById(decoded.userId);
     if (!user) {
+      console.error('Usuario no encontrado con ID:', decoded.userId);
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
+    
+    console.log('Usuario encontrado:', {
+      id: user.id,
+      username: user.username,
+      email: user.email
+    });
 
     // Actualizar la contraseña en la base de datos
-    await User.updatePassword(decoded.userId, password);
+    console.log('Intentando actualizar contraseña para usuario ID:', user.id);
+    const updated = await User.updatePassword(decoded.userId, password);
+    
+    if (!updated) {
+      console.error('No se pudo actualizar la contraseña, no se modificaron filas');
+      return res.status(500).json({ 
+        detail: 'No se pudo actualizar la contraseña. Contacte al administrador.' 
+      });
+    }
+    
+    console.log('Contraseña actualizada exitosamente para usuario ID:', user.id);
 
     res.status(200).json({
       detail: 'Contraseña restablecida con éxito. Ahora puedes iniciar sesión con tu nueva contraseña.'
