@@ -1,7 +1,6 @@
 const { verifyAccessToken } = require('../utils/jwtUtils');
 const { pool } = require('../config/database');
 const Administrador = require('../models/adminModel');
-const jwt = require('jsonwebtoken');
 
 // Middleware para verificar autenticación
 const authenticateToken = (req, res, next) => {
@@ -62,30 +61,7 @@ const isAdmin = async (req, res, next) => {
   }
 };
 
-// Middleware para verificar JWT simple (x-auth-token)
-const authMiddleware = function(req, res, next) {
-  // Obtener token del encabezado
-  const token = req.header('x-auth-token');
-  
-  // Verificar si no hay token
-  if (!token) {
-    return res.status(401).json({ msg: 'No hay token, autorización denegada' });
-  }
-  
-  try {
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Añadir usuario desde payload
-    req.user = decoded.user;
-    next();
-  } catch (err) {
-    res.status(401).json({ msg: 'Token no válido' });
-  }
-};
-
 module.exports = {
   authenticateToken,
-  isAdmin,
-  authMiddleware
+  isAdmin
 };
