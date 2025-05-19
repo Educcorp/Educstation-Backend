@@ -9,9 +9,6 @@ const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 const comentariosRoutes = require('./routes/comentariosRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
-const blogRoutes = require('./routes/blogRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-const userRoutes = require('./routes/userRoutes');
 
 
 // Función para ejecutar migraciones
@@ -225,9 +222,6 @@ app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
 app.use('/api/chatbot', chatbotRoutes);
-app.use('/api/blog', blogRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/auth/user', userRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
