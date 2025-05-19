@@ -107,6 +107,20 @@ class User {
       throw error;
     }
   }
+
+  // Actualizar avatar del usuario
+  static async updateAvatar(userId, avatarData) {
+    try {
+      const [result] = await pool.execute(
+        'UPDATE auth_user SET avatar = ? WHERE id = ?',
+        [avatarData, userId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error al actualizar avatar:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = User;

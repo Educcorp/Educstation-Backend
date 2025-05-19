@@ -199,7 +199,7 @@ async function runMigrations() {
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Aumentado el límite para imágenes base64
 app.use(cors({
     origin: ['http://localhost:3002', 'https://www.educstation.com', 'https://educstation.com'],
     credentials: true,
@@ -222,6 +222,7 @@ app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/users', require('./routes/userRoutes'));
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
@@ -248,6 +249,14 @@ const PORT = process.env.PORT || 3000;
 
 // Función principal
 async function startServer() {
+  // Ejecutar migración para el campo avatar
+  try {
+    const addAvatarField = require('./migrations/add-avatar-field');
+    await addAvatarField();
+    console.log('Migración para el campo avatar completada');
+  } catch (error) {
+    console.error('Error al ejecutar migración para el campo avatar:', error);
+  }
   // Ejecutar migraciones primero
   await runMigrations();
   
