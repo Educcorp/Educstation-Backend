@@ -18,6 +18,23 @@ const getAllPublicaciones = async (req, res) => {
   }
 };
 
+// Obtener las últimas publicaciones (endpoint simplificado y alternativo)
+const getLatestPublicaciones = async (req, res) => {
+  try {
+    const limite = req.query.limite ? parseInt(req.query.limite) : 10;
+    
+    // Usar una consulta directa más simple para evitar problemas
+    // Siempre con estado 'publicado'
+    const publicaciones = await Publicacion.getLatest(limite);
+    
+    console.log(`Retornando ${publicaciones.length} publicaciones desde getLatestPublicaciones`);
+    res.json(publicaciones);
+  } catch (error) {
+    console.error('Error al obtener últimas publicaciones:', error);
+    res.status(500).json({ detail: 'Error al obtener las últimas publicaciones' });
+  }
+};
+
 // Obtener publicación por ID
 const getPublicacionById = async (req, res) => {
   try {
@@ -54,7 +71,7 @@ const createPublicacion = async (req, res) => {
     // Log detallado de la solicitud
     console.log('Datos recibidos para crear publicación:', req.body);
 
-    const { titulo, contenido, resumen, estado, categorias } = req.body;
+    const { titulo, contenido, resumen, estado, categorias, imagen_portada_html } = req.body;
 
     // Validar que los campos requeridos estén presentes
     if (!titulo || !contenido) {
@@ -97,7 +114,8 @@ const createPublicacion = async (req, res) => {
       resumen: resumen || titulo.substring(0, 100), // Si no hay resumen, usar parte del título
       estado: estado || 'borrador',
       id_administrador,
-      categorias: categoriasArray
+      categorias: categoriasArray,
+      imagen_portada_html: imagen_portada_html || null
     };
 
     console.log('Datos a guardar en la base de datos:', publicacionData);
@@ -140,7 +158,7 @@ const createPublicacionFromHTML = async (req, res) => {
       return res.status(400).json({ detail: 'El contenido HTML es requerido' });
     }
 
-    const { titulo, resumen, estado, categorias, htmlContent } = req.body;
+    const { titulo, resumen, estado, categorias, htmlContent, imagen_portada_html } = req.body;
 
     // Validar que los campos requeridos estén presentes
     if (!titulo || !htmlContent) {
@@ -183,7 +201,8 @@ const createPublicacionFromHTML = async (req, res) => {
       resumen: resumen || titulo.substring(0, 100), // Si no hay resumen, usar parte del título
       estado: estado || 'borrador',
       id_administrador,
-      categorias: categoriasArray
+      categorias: categoriasArray,
+      imagen_portada_html: imagen_portada_html || null
     };
 
     console.log('Datos a guardar en la base de datos (HTML):', publicacionData);
@@ -393,6 +412,7 @@ const advancedSearch = async (req, res) => {
 
 module.exports = {
   getAllPublicaciones,
+  getLatestPublicaciones,
   getPublicacionById,
   createPublicacion,
   createPublicacionFromHTML,
