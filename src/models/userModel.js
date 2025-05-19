@@ -34,7 +34,7 @@ class User {
   static async findById(id) {
     try {
       const [rows] = await pool.execute(
-        'SELECT id, username, email, first_name, last_name, is_staff, is_superuser FROM auth_user WHERE id = ?',
+        'SELECT id, username, email, first_name, last_name, is_staff, is_superuser, avatar, date_joined FROM auth_user WHERE id = ?',
         [id]
       );
       return rows[0];
@@ -58,8 +58,8 @@ class User {
     try {
       const [result] = await pool.execute(
         `INSERT INTO auth_user 
-        (username, email, password, first_name, last_name, is_staff, is_active, date_joined, is_superuser) 
-        VALUES (?, ?, ?, ?, ?, 0, 1, ?, 0)`,
+        (username, email, password, first_name, last_name, is_staff, is_active, date_joined, is_superuser, avatar) 
+        VALUES (?, ?, ?, ?, ?, 0, 1, ?, 0, '/assets/images/logoBN.png')`,
         [username, email, hashedPassword, first_name, last_name, now]
       );
       
@@ -104,6 +104,21 @@ class User {
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
+      throw error;
+    }
+  }
+
+  // Actualizar avatar de usuario
+  static async updateAvatar(userId, avatarUrl) {
+    try {
+      const [result] = await pool.execute(
+        'UPDATE auth_user SET avatar = ? WHERE id = ?',
+        [avatarUrl, userId]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error al actualizar avatar:', error);
       throw error;
     }
   }
