@@ -6,90 +6,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 const { sendPasswordResetEmail } = require('../utils/emailUtils');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Configuración de multer para el almacenamiento de archivos
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../../uploads/avatars');
-    // Crear el directorio si no existe
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generar nombre único para el archivo
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// Filtro para aceptar solo imágenes
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Solo se permiten archivos de imagen.'), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // límite de 5MB
-  }
-});
-
-// Función auxiliar para limpiar imágenes antiguas
-const cleanupOldAvatar = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    if (user && user.avatar) {
-      // Verificar si el avatar actual es una imagen base64 (comienza con data:image)
-      if (user.avatar.startsWith('data:image')) {
-        // Extraer el tipo de imagen y los datos base64
-        const matches = user.avatar.match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const imageType = matches[1];
-          const base64Data = matches[2];
-          
-          // Crear un nombre de archivo único basado en el ID del usuario
-          const fileName = `avatar_${userId}_${Date.now()}.${imageType}`;
-          const filePath = path.join(__dirname, '../../uploads/avatars', fileName);
-          
-          // Asegurarse de que el directorio existe
-          const uploadDir = path.join(__dirname, '../../uploads/avatars');
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
-          
-          // Guardar la imagen como archivo
-          fs.writeFileSync(filePath, base64Data, 'base64');
-          
-          // Eliminar el archivo anterior si existe
-          const oldFiles = fs.readdirSync(uploadDir);
-          oldFiles.forEach(file => {
-            if (file.startsWith(`avatar_${userId}_`) && file !== fileName) {
-              fs.unlinkSync(path.join(uploadDir, file));
-            }
-          });
-          
-          // Actualizar la URL en la base de datos para que apunte al archivo
-          await User.updateAvatar(userId, `/uploads/avatars/${fileName}`);
-          return `/uploads/avatars/${fileName}`;
-        }
-      }
-    }
-    return null;
-  } catch (error) {
-    console.error('Error al limpiar avatar antiguo:', error);
-    return null;
-  }
-};
 
 // Registro de usuario
 const register = async (req, res) => {
@@ -258,8 +174,7 @@ const getUserDetails = async (req, res) => {
       first_name: user.first_name,
       last_name: user.last_name,
       is_admin: user.is_staff === 1,
-      is_superuser: user.is_superuser === 1,
-      avatar: user.avatar
+      is_superuser: user.is_superuser === 1
     });
   } catch (error) {
     console.error('Error al obtener detalles del usuario:', error);
@@ -322,8 +237,15 @@ const requestPasswordReset = async (req, res) => {
       { expiresIn: '1h' }
     );
 
+    // Normalizar la URL base para evitar doble slash
+    let baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Eliminar la barra final si existe
+    baseUrl = baseUrl.replace(/\/$/, '');
+    
     // Crear URL de restablecimiento (frontend)
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+    const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
+    
+    console.log('URL de restablecimiento generada:', resetUrl);
 
     // Preparar información de respuesta
     const responseData = {
@@ -372,6 +294,11 @@ const requestPasswordReset = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
+    
+    console.log('Solicitud de restablecimiento de contraseña recibida:', {
+      tokenLength: token ? token.length : 'no proporcionado',
+      passwordLength: password ? password.length : 'no proporcionada'
+    });
 
     if (!token || !password) {
       return res.status(400).json({
@@ -383,12 +310,20 @@ const resetPassword = async (req, res) => {
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token verificado correctamente, datos decodificados:', {
+        userId: decoded.userId,
+        action: decoded.action,
+        exp: decoded.exp,
+        iat: decoded.iat
+      });
 
       // Verificar que sea un token de restablecimiento de contraseña
       if (decoded.action !== 'password_reset') {
-        throw new Error('Token inválido');
+        console.log('Token con acción incorrecta:', decoded.action);
+        throw new Error('Token inválido, acción incorrecta');
       }
     } catch (error) {
+      console.error('Error al verificar token:', error.message);
       return res.status(400).json({
         detail: 'El token es inválido o ha expirado. Solicita un nuevo enlace de restablecimiento.'
       });
@@ -397,11 +332,28 @@ const resetPassword = async (req, res) => {
     // Buscar al usuario
     const user = await User.findById(decoded.userId);
     if (!user) {
+      console.error('Usuario no encontrado con ID:', decoded.userId);
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
+    
+    console.log('Usuario encontrado:', {
+      id: user.id,
+      username: user.username,
+      email: user.email
+    });
 
     // Actualizar la contraseña en la base de datos
-    await User.updatePassword(decoded.userId, password);
+    console.log('Intentando actualizar contraseña para usuario ID:', user.id);
+    const updated = await User.updatePassword(decoded.userId, password);
+    
+    if (!updated) {
+      console.error('No se pudo actualizar la contraseña, no se modificaron filas');
+      return res.status(500).json({ 
+        detail: 'No se pudo actualizar la contraseña. Contacte al administrador.' 
+      });
+    }
+    
+    console.log('Contraseña actualizada exitosamente para usuario ID:', user.id);
 
     res.status(200).json({
       detail: 'Contraseña restablecida con éxito. Ahora puedes iniciar sesión con tu nueva contraseña.'
@@ -431,37 +383,6 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-// Actualizar avatar del usuario
-const updateAvatar = async (req, res) => {
-  try {
-    const { avatarUrl } = req.body;
-    
-    if (!avatarUrl) {
-      return res.status(400).json({ detail: 'URL del avatar es requerida' });
-    }
-
-    // Limpiar avatar antiguo y obtener nueva URL
-    const newAvatarUrl = await cleanupOldAvatar(req.userId);
-    
-    // Si la limpieza fue exitosa, usar la nueva URL, de lo contrario usar la URL base64
-    const finalAvatarUrl = newAvatarUrl || avatarUrl;
-    
-    const success = await User.updateAvatar(req.userId, finalAvatarUrl);
-    
-    if (!success) {
-      return res.status(404).json({ detail: 'Usuario no encontrado' });
-    }
-
-    res.json({ 
-      detail: 'Avatar actualizado exitosamente',
-      avatarUrl: finalAvatarUrl
-    });
-  } catch (error) {
-    console.error('Error al actualizar avatar:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
-  }
-};
-
 module.exports = {
   register,
   login,
@@ -470,7 +391,5 @@ module.exports = {
   checkUsernameAvailability,
   requestPasswordReset,
   resetPassword,
-  deleteAccount,
-  updateAvatar,
-  upload
+  deleteAccount
 };
