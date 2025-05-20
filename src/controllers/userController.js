@@ -19,12 +19,12 @@ exports.register = async (req, res) => {
     // Verificar si el usuario ya existe
     const existingUser = await User.findByUsername(username);
     if (existingUser) {
-      return res.status(400).json({ msg: 'El nombre de usuario ya existe' });
+      return res.status(400).json({ detail: 'El nombre de usuario ya existe' });
     }
 
     const existingEmail = await User.findByEmail(email);
     if (existingEmail) {
-      return res.status(400).json({ msg: 'El email ya está registrado' });
+      return res.status(400).json({ detail: 'El email ya está registrado' });
     }
 
     // Crear nuevo usuario
@@ -56,7 +56,7 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en registro:', error);
-    res.status(500).json({ msg: 'Error en el servidor' });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
 };
 
@@ -68,13 +68,13 @@ exports.login = async (req, res) => {
     // Buscar usuario
     const user = await User.findByUsername(username);
     if (!user) {
-      return res.status(400).json({ msg: 'Credenciales inválidas' });
+      return res.status(401).json({ detail: 'Credenciales inválidas' });
     }
 
     // Verificar contraseña
     const isMatch = await User.comparePassword(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Credenciales inválidas' });
+      return res.status(401).json({ detail: 'Credenciales inválidas' });
     }
 
     // Generar token
@@ -95,7 +95,7 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({ msg: 'Error en el servidor' });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
 };
 
@@ -104,7 +104,7 @@ exports.getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ msg: 'Usuario no encontrado' });
+      return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
 
     res.json({
@@ -119,7 +119,7 @@ exports.getCurrentUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Error al obtener usuario actual:', error);
-    res.status(500).json({ msg: 'Error en el servidor' });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
 };
 
@@ -127,20 +127,20 @@ exports.getCurrentUser = async (req, res) => {
 exports.updateAvatar = async (req, res) => {
   try {
     const { avatarData } = req.body;
-    
+
     if (!avatarData) {
-      return res.status(400).json({ msg: 'No se proporcionaron datos para el avatar' });
+      return res.status(400).json({ detail: 'No se proporcionaron datos para el avatar' });
     }
-    
+
     const success = await User.updateAvatar(req.user.id, avatarData);
-    
+
     if (!success) {
-      return res.status(400).json({ msg: 'No se pudo actualizar el avatar' });
+      return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
     }
-    
-    res.json({ msg: 'Avatar actualizado con éxito' });
+
+    res.json({ detail: 'Avatar actualizado con éxito' });
   } catch (error) {
     console.error('Error al actualizar avatar:', error);
-    res.status(500).json({ msg: 'Error en el servidor' });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
-}; 
+};
