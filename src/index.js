@@ -21,6 +21,7 @@ async function runMigrations() {
         Titulo VARCHAR(100) NOT NULL,
         Contenido TEXT NOT NULL,
         Resumen VARCHAR(500),
+        Imagen_portada LONGBLOB,
         Estado ENUM('borrador', 'publicado', 'archivado') DEFAULT 'borrador',
         Imagen_destacada_ID INT NULL,
         Fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -87,6 +88,7 @@ async function runMigrations() {
             Titulo VARCHAR(100) NOT NULL,
             Contenido TEXT NOT NULL,
             Resumen VARCHAR(500),
+            Imagen_portada LONGBLOB,
             Estado ENUM('borrador', 'publicado', 'archivado') DEFAULT 'borrador',
             Imagen_destacada_ID INT NULL,
             Fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -256,6 +258,15 @@ async function startServer() {
     console.log('Migración para el campo avatar completada');
   } catch (error) {
     console.error('Error al ejecutar migración para el campo avatar:', error);
+  }
+
+  // Ejecutar migración para el campo Imagen_portada
+  try {
+    const fixImagenPortada = require('./migrations/fix-imagen-portada-blob');
+    await fixImagenPortada();
+    console.log('Migración para el campo Imagen_portada completada');
+  } catch (error) {
+    console.error('Error al ejecutar migración para el campo Imagen_portada:', error);
   }
 
   // Ejecutar migraciones primero
