@@ -222,7 +222,7 @@ app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
 app.use('/api/chatbot', chatbotRoutes);
-//app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
