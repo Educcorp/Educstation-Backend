@@ -268,6 +268,15 @@ async function startServer() {
   } catch (error) {
     console.error('Error al ejecutar migración para el campo Imagen_portada:', error);
   }
+  
+  // Ejecutar migración para arreglar los datos de Imagen_portada
+  try {
+    const fixImagenPortadaData = require('./migrations/fix-imagen-portada-data');
+    await fixImagenPortadaData();
+    console.log('Migración para arreglar datos de Imagen_portada completada');
+  } catch (error) {
+    console.error('Error al ejecutar migración para arreglar datos de Imagen_portada:', error);
+  }
 
   // Ejecutar migraciones primero
   await runMigrations();
