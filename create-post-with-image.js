@@ -35,11 +35,11 @@ async function createPostWithImage() {
     console.log('Creando nuevo post con imagen HTML...');
     const [result] = await connection.query(`
       INSERT INTO Publicaciones 
-      (Titulo, Contenido, Resumen, imagen_portada_html, Estado, ID_administrador)
+      (Titulo, Contenido, Resumen, Imagen_portada, Estado, ID_administrador)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
       'Post de prueba con imagen HTML',
-      '<p>Este es un contenido de prueba para verificar la funcionalidad de imagen_portada_html.</p>' + imagenHTML,
+      '<p>Este es un contenido de prueba para verificar la funcionalidad de Imagen_portada.</p>' + imagenHTML,
       'Este es un resumen de prueba',
       imagenHTML,
       'publicado',
@@ -51,7 +51,7 @@ async function createPostWithImage() {
     
     // Verificar que la creación se realizó correctamente
     const [post] = await connection.query(`
-      SELECT ID_publicaciones, Titulo, imagen_portada_html
+      SELECT ID_publicaciones, Titulo, Imagen_portada
       FROM Publicaciones
       WHERE ID_publicaciones = ?
     `, [postId]);
@@ -59,7 +59,7 @@ async function createPostWithImage() {
     console.log('\nDetalles del post creado:');
     console.log(`ID: ${post[0].ID_publicaciones}`);
     console.log(`Título: ${post[0].Titulo}`);
-    console.log(`Imagen HTML: ${post[0].imagen_portada_html ? 'PRESENTE' : 'NO PRESENTE'}`);
+    console.log(`Imagen HTML: ${post[0].Imagen_portada ? 'PRESENTE' : 'NO PRESENTE'}`);
     
   } catch (error) {
     console.error('Error al crear el post:', error);

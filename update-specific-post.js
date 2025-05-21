@@ -46,7 +46,7 @@ async function updateSpecificPost() {
     console.log(`\nActualizando post ID ${postId} con una imagen HTML...`);
     const [result] = await connection.query(`
       UPDATE Publicaciones
-      SET imagen_portada_html = ?
+      SET Imagen_portada = ?
       WHERE ID_publicaciones = ?
     `, [imagenHTML, postId]);
     
@@ -55,7 +55,7 @@ async function updateSpecificPost() {
       
       // Verificar que la actualización se realizó correctamente
       const [post] = await connection.query(`
-        SELECT ID_publicaciones, Titulo, imagen_portada_html
+        SELECT ID_publicaciones, Titulo, Imagen_portada
         FROM Publicaciones
         WHERE ID_publicaciones = ?
       `, [postId]);
@@ -63,7 +63,7 @@ async function updateSpecificPost() {
       console.log('\nDetalles del post actualizado:');
       console.log(`ID: ${post[0].ID_publicaciones}`);
       console.log(`Título: ${post[0].Titulo}`);
-      console.log(`Imagen HTML: ${post[0].imagen_portada_html ? 'PRESENTE' : 'NO PRESENTE'}`);
+      console.log(`Imagen HTML: ${post[0].Imagen_portada ? 'PRESENTE' : 'NO PRESENTE'}`);
     }
     
   } catch (error) {

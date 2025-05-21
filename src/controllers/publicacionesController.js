@@ -71,7 +71,7 @@ const createPublicacion = async (req, res) => {
     // Log detallado de la solicitud
     console.log('Datos recibidos para crear publicación:', req.body);
 
-    const { titulo, contenido, resumen, estado, categorias, imagen_portada_html } = req.body;
+    const { titulo, contenido, resumen, estado, categorias, Imagen_portada } = req.body;
 
     // Validar que los campos requeridos estén presentes
     if (!titulo || !contenido) {
@@ -115,7 +115,7 @@ const createPublicacion = async (req, res) => {
       estado: estado || 'borrador',
       id_administrador,
       categorias: categoriasArray,
-      imagen_portada_html: imagen_portada_html || null
+      Imagen_portada: Imagen_portada || null
     };
 
     console.log('Datos a guardar en la base de datos:', publicacionData);
@@ -158,7 +158,7 @@ const createPublicacionFromHTML = async (req, res) => {
       return res.status(400).json({ detail: 'El contenido HTML es requerido' });
     }
 
-    const { titulo, resumen, estado, categorias, htmlContent, imagen_portada_html } = req.body;
+    const { titulo, resumen, estado, categorias, htmlContent, Imagen_portada } = req.body;
 
     // Validar que los campos requeridos estén presentes
     if (!titulo || !htmlContent) {
@@ -202,7 +202,7 @@ const createPublicacionFromHTML = async (req, res) => {
       estado: estado || 'borrador',
       id_administrador,
       categorias: categoriasArray,
-      imagen_portada_html: imagen_portada_html || null
+      Imagen_portada: Imagen_portada || null
     };
 
     console.log('Datos a guardar en la base de datos (HTML):', publicacionData);
