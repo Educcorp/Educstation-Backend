@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const Publicacion = require('./publicacionesModel');
 
 class Categoria {
   // Buscar categoría por ID
@@ -134,13 +135,28 @@ class Categoria {
   static async getPublicaciones(id) {
     try {
       const [rows] = await pool.execute(
-        `SELECT p.* 
+        `SELECT p.*, a.Nombre as NombreAdmin 
          FROM Publicaciones p
          JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+         JOIN Administrador a ON p.ID_administrador = a.ID_administrador
          WHERE pc.ID_categoria = ? AND p.Estado = 'publicado'
          ORDER BY p.Fecha_creacion DESC`,
         [id]
       );
+      
+      // Process Imagen_portada for each publication
+      for (const publicacion of rows) {
+        Publicacion.processImagenPortada(publicacion);
+      }
+      
+      // Para cada publicación, obtener sus categorías
+      if (rows.length > 0) {
+        for (const publicacion of rows) {
+          const categorias = await Publicacion.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
       return rows;
     } catch (error) {
       console.error('Error al obtener publicaciones por categoría:', error);
