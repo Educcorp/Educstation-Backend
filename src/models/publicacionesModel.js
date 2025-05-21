@@ -1,6 +1,32 @@
 const { pool } = require('../config/database');
 
 class Publicacion {
+  // Utility method to process Imagen_portada data
+  static processImagenPortada(publicacion) {
+    if (!publicacion || !publicacion.Imagen_portada) return;
+      
+    // If it's a Buffer, convert to string
+    if (publicacion.Imagen_portada instanceof Buffer) {
+      try {
+        const imgString = publicacion.Imagen_portada.toString('utf8');
+        if (imgString.startsWith('data:image')) {
+          publicacion.Imagen_portada = imgString;
+        } else {
+          // If not a valid base64 image, set to null
+          console.log(`Publication ${publicacion.ID_publicaciones} has invalid Imagen_portada data, converting to null`);
+          publicacion.Imagen_portada = null;
+        }
+      } catch (error) {
+        console.error(`Error converting Buffer to string for publication ${publicacion.ID_publicaciones}:`, error);
+        publicacion.Imagen_portada = null;
+      }
+    } else if (typeof publicacion.Imagen_portada !== 'string' || publicacion.Imagen_portada === '[object Object]') {
+      // Handle non-string data that's not a buffer
+      console.log(`Publication ${publicacion.ID_publicaciones} has non-string Imagen_portada: ${typeof publicacion.Imagen_portada}`);
+      publicacion.Imagen_portada = null;
+    }
+  }
+
   // Buscar publicación por ID
   static async findById(id) {
     try {
@@ -11,7 +37,15 @@ class Publicacion {
          WHERE p.ID_publicaciones = ?`,
         [id]
       );
-      return rows[0];
+      
+      // Process the post if found
+      if (rows.length > 0) {
+        const post = rows[0];
+        this.processImagenPortada(post);
+        return post;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error al buscar publicación por ID:', error);
       throw error;
@@ -39,6 +73,11 @@ class Publicacion {
       params.push(limite, offset);
 
       const [publicaciones] = await pool.execute(query, params);
+      
+      // Normalize all posts data
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
       
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
@@ -99,6 +138,26 @@ class Publicacion {
   static async create(publicacionData) {
     const { titulo, contenido, resumen, estado, id_administrador, Imagen_portada } = publicacionData;
 
+    // Process Imagen_portada to ensure it's a string
+    let imagenPortadaProcessed = null;
+    if (Imagen_portada) {
+      // Check if it's already a string
+      if (typeof Imagen_portada === 'string') {
+        imagenPortadaProcessed = Imagen_portada;
+      } else {
+        // Try to convert to string if it's an object
+        try {
+          console.log('Converting Imagen_portada object to string');
+          // If toString() doesn't yield a base64 string, return null
+          const strValue = Imagen_portada.toString();
+          imagenPortadaProcessed = strValue.startsWith('data:image') ? strValue : null;
+        } catch (err) {
+          console.error('Error processing Imagen_portada:', err);
+          imagenPortadaProcessed = null;
+        }
+      }
+    }
+
     try {
       const connection = await pool.getConnection();
 
@@ -110,7 +169,7 @@ class Publicacion {
           `INSERT INTO Publicaciones 
            (Titulo, Contenido, Resumen, Imagen_portada, Estado, ID_administrador) 
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [titulo, contenido, resumen, Imagen_portada || null, estado || 'borrador', id_administrador]
+          [titulo, contenido, resumen, imagenPortadaProcessed, estado || 'borrador', id_administrador]
         );
 
         const publicacionId = result.insertId;
@@ -141,6 +200,26 @@ class Publicacion {
   static async update(id, publicacionData) {
     const { titulo, contenido, resumen, estado, Imagen_portada } = publicacionData;
 
+    // Process Imagen_portada to ensure it's a string
+    let imagenPortadaProcessed = null;
+    if (Imagen_portada) {
+      // Check if it's already a string
+      if (typeof Imagen_portada === 'string') {
+        imagenPortadaProcessed = Imagen_portada;
+      } else {
+        // Try to convert to string if it's an object
+        try {
+          console.log('Converting Imagen_portada object to string');
+          // If toString() doesn't yield a base64 string, return null
+          const strValue = Imagen_portada.toString();
+          imagenPortadaProcessed = strValue.startsWith('data:image') ? strValue : null;
+        } catch (err) {
+          console.error('Error processing Imagen_portada:', err);
+          imagenPortadaProcessed = null;
+        }
+      }
+    }
+
     try {
       const connection = await pool.getConnection();
 
@@ -167,7 +246,7 @@ class Publicacion {
           `UPDATE Publicaciones 
            SET Titulo = ?, Contenido = ?, Resumen = ?, Imagen_portada = ?, Estado = ? 
            WHERE ID_publicaciones = ?`,
-          [titulo, contenido, resumen, Imagen_portada, estado, id]
+          [titulo, contenido, resumen, imagenPortadaProcessed, estado, id]
         );
 
         // Actualizar categorías si se proporcionan
@@ -282,6 +361,11 @@ class Publicacion {
         [`%${term}%`, `%${term}%`, `%${term}%`, limite, offset]
       );
       
+      // Process Imagen_portada for each publication
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
+      
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
         for (const publicacion of publicaciones) {
@@ -312,6 +396,11 @@ class Publicacion {
         [`%${term}%`, limite, offset]
       );
       
+      // Process Imagen_portada for each publication
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
+      
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
         for (const publicacion of publicaciones) {
@@ -341,6 +430,11 @@ class Publicacion {
        LIMIT ? OFFSET ?`,
         [`%${term}%`, limite, offset]
       );
+      
+      // Process Imagen_portada for each publication
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
       
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {

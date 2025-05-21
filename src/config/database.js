@@ -5,6 +5,19 @@ dotenv.config();
 
 // Función para parsear la URL de MySQL de Railway si existe
 function createConnectionConfig() {
+  // Configuración común para ambos entornos
+  const commonConfig = {
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 60000, // 60 segundos
+    acquireTimeout: 60000,
+    // Configurar un max_allowed_packet más grande (100MB)
+    maxAllowedPacket: 104857600,
+    // Otras opciones para mejorar el manejo de grandes conjuntos de datos
+    flags: ['-FOUND_ROWS']
+  };
+
   // Si estamos en Railway (producción)
   if (process.env.MYSQL_URL) {
     // La URL tiene este formato: mysql://usuario:contraseña@host:puerto/nombrebd
@@ -16,11 +29,7 @@ function createConnectionConfig() {
         user: url.username,
         password: url.password,
         database: url.pathname.substring(1), // Eliminar el '/' inicial
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-        connectTimeout: 60000, // 60 segundos
-        acquireTimeout: 60000
+        ...commonConfig
       };
     } catch (error) {
       console.error('Error al parsear MYSQL_URL:', error.message);
@@ -36,11 +45,7 @@ function createConnectionConfig() {
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'educcorp_educs',
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      connectTimeout: 60000, // 60 segundos
-      acquireTimeout: 60000
+      ...commonConfig
     };
   }
 }
@@ -51,8 +56,14 @@ try {
   pool = mysql.createPool(createConnectionConfig());
 
   // Registrar eventos del pool
-  pool.on('connection', () => {
+  pool.on('connection', (connection) => {
     console.log('Nueva conexión establecida con la base de datos');
+    
+    // Configurar variables de sesión para esta conexión
+    connection.query('SET SESSION net_read_timeout = 600');
+    connection.query('SET SESSION net_write_timeout = 600');
+    connection.query('SET SESSION wait_timeout = 600');
+    connection.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
   });
 
   pool.on('error', (err) => {
