@@ -211,6 +211,35 @@ const checkUsernameAvailability = async (req, res) => {
   }
 };
 
+// Validar disponibilidad de correo electrónico
+const checkEmailAvailability = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ detail: 'Se requiere un correo electrónico' });
+    }
+
+    // Validar formato de correo electrónico
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.json({
+        available: false,
+        message: 'Formato de correo electrónico inválido'
+      });
+    }
+
+    const existingUser = await User.findByEmail(email);
+
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'El correo electrónico ya está registrado' : 'El correo electrónico está disponible'
+    });
+  } catch (error) {
+    console.error('Error al verificar disponibilidad de correo electrónico:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
 // Solicitar restablecimiento de contraseña
 const requestPasswordReset = async (req, res) => {
   try {
@@ -241,10 +270,10 @@ const requestPasswordReset = async (req, res) => {
     let baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     // Eliminar la barra final si existe
     baseUrl = baseUrl.replace(/\/$/, '');
-    
+
     // Crear URL de restablecimiento (frontend)
     const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
-    
+
     console.log('URL de restablecimiento generada:', resetUrl);
 
     // Preparar información de respuesta
@@ -294,7 +323,7 @@ const requestPasswordReset = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    
+
     console.log('Solicitud de restablecimiento de contraseña recibida:', {
       tokenLength: token ? token.length : 'no proporcionado',
       passwordLength: password ? password.length : 'no proporcionada'
@@ -335,7 +364,7 @@ const resetPassword = async (req, res) => {
       console.error('Usuario no encontrado con ID:', decoded.userId);
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
-    
+
     console.log('Usuario encontrado:', {
       id: user.id,
       username: user.username,
@@ -345,14 +374,14 @@ const resetPassword = async (req, res) => {
     // Actualizar la contraseña en la base de datos
     console.log('Intentando actualizar contraseña para usuario ID:', user.id);
     const updated = await User.updatePassword(decoded.userId, password);
-    
+
     if (!updated) {
       console.error('No se pudo actualizar la contraseña, no se modificaron filas');
-      return res.status(500).json({ 
-        detail: 'No se pudo actualizar la contraseña. Contacte al administrador.' 
+      return res.status(500).json({
+        detail: 'No se pudo actualizar la contraseña. Contacte al administrador.'
       });
     }
-    
+
     console.log('Contraseña actualizada exitosamente para usuario ID:', user.id);
 
     res.status(200).json({
@@ -389,6 +418,7 @@ module.exports = {
   refreshToken,
   getUserDetails,
   checkUsernameAvailability,
+  checkEmailAvailability,
   requestPasswordReset,
   resetPassword,
   deleteAccount
