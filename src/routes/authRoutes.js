@@ -15,6 +15,7 @@ router.post('/token/', loginValidator, authController.login);
 router.post('/token/refresh/', authController.refreshToken);
 router.get('/user/', authenticateToken, authController.getUserDetails);
 router.get('/user/:username/check', authController.checkUsernameAvailability);
+router.post('/email/check', authController.checkEmailAvailability);
 
 // Rutas para restablecimiento de contraseña
 router.post('/password-reset/', passwordResetRequestValidator, authController.requestPasswordReset);
