@@ -9,7 +9,7 @@ let transporter = null;
 
 // Configurar el transporter de nodemailer para Gmail
 const setupTransporter = () => {
-  // Verificar si tenemos credenciales de Gmail configuradas (usando las variables existentes)
+  // Verificar si tenemos credenciales de Gmail configuradas
   const hasGmailCredentials = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
 
   if (hasGmailCredentials) {
@@ -19,12 +19,16 @@ const setupTransporter = () => {
     console.log('📧 Email FROM:', process.env.EMAIL_FROM);
     console.log('🔧 Servicio:', process.env.EMAIL_SERVICE || 'gmail');
 
-    transporter = nodemailer.createTransporter({
+    // Limpiar espacios de la contraseña si existen
+    const cleanPassword = process.env.EMAIL_PASSWORD.replace(/\s/g, '');
+    console.log('🔑 Contraseña limpiada de espacios:', cleanPassword.length, 'caracteres');
+    
+    transporter = nodemailer.createTransport({
       service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD, // Contraseña de aplicación de 16 caracteres
-      },
+        pass: cleanPassword
+      }
     });
   } else {
     // Modo simulado si no hay credenciales
@@ -39,10 +43,6 @@ const setupTransporter = () => {
         console.log(`De: ${mailOptions.from}`);
         console.log(`Para: ${mailOptions.to}`);
         console.log(`Asunto: ${mailOptions.subject}`);
-        console.log(`Contenido HTML:`);
-        console.log(mailOptions.html ? mailOptions.html.substring(0, 500) + '...' : 'No hay contenido HTML');
-        console.log(`Contenido Texto:`);
-        console.log(mailOptions.text ? mailOptions.text.substring(0, 500) + '...' : 'No hay contenido de texto');
         console.log('=== FIN DEL CORREO SIMULADO ===');
         return {
           messageId: `simulado-${Date.now()}`,
@@ -57,11 +57,6 @@ const setupTransporter = () => {
 
 /**
  * Envía un correo electrónico
- * @param {string} to - Destinatario del correo
- * @param {string} subject - Asunto del correo
- * @param {string} text - Contenido en texto plano
- * @param {string} html - Contenido en HTML
- * @returns {Promise} - Promesa con el resultado del envío
  */
 const sendEmail = async (to, subject, text, html) => {
   if (!transporter) {
@@ -69,7 +64,7 @@ const sendEmail = async (to, subject, text, html) => {
   }
 
   const mailOptions = {
-    from: `"EducStation" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`, // Usar EMAIL_FROM o EMAIL_USER
+    from: `"EducStation" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
     to,
     subject,
     text,
@@ -90,10 +85,6 @@ const sendEmail = async (to, subject, text, html) => {
 
 /**
  * Envía un correo de restablecimiento de contraseña
- * @param {string} to - Dirección de correo del destinatario
- * @param {string} name - Nombre del usuario
- * @param {string} resetUrl - URL para restablecer la contraseña
- * @returns {Promise} - Promesa con el resultado del envío
  */
 const sendPasswordResetEmail = async (to, name, resetUrl) => {
   const subject = 'Restablecimiento de contraseña - EducStation';
@@ -190,11 +181,6 @@ const sendPasswordResetEmail = async (to, name, resetUrl) => {
 
 /**
  * Envía un correo desde el formulario de contacto
- * @param {string} fromEmail - Email del remitente
- * @param {string} fromName - Nombre del remitente
- * @param {string} subject - Asunto del mensaje
- * @param {string} message - Contenido del mensaje
- * @returns {Promise} - Promesa con el resultado del envío
  */
 const sendContactEmail = async (fromEmail, fromName, subject, message) => {
   const emailSubject = `${subject} - Contacto desde EducStation`;
@@ -291,7 +277,7 @@ const sendContactEmail = async (fromEmail, fromName, subject, message) => {
   `;
 
   // Enviar a la cuenta de Gmail configurada
-  const destinationEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'educcorp3@gmail.com';
+  const destinationEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
   return await sendEmail(destinationEmail, emailSubject, text, html);
 };
 
@@ -299,4 +285,4 @@ module.exports = {
   sendEmail,
   sendPasswordResetEmail,
   sendContactEmail
-};
+}; 
