@@ -9,7 +9,7 @@ const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 const comentariosRoutes = require('./routes/comentariosRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
-
+const contactRoutes = require('./routes/contactRoutes');
 
 // Función para ejecutar migraciones
 async function runMigrations() {
@@ -225,6 +225,7 @@ app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/contact', contactRoutes);
 
 // Ruta principal - esencial para el healthcheck
 app.get('/', (req, res) => {
@@ -268,7 +269,7 @@ async function startServer() {
   } catch (error) {
     console.error('Error al ejecutar migración para el campo Imagen_portada:', error);
   }
-  
+
   // Ejecutar migración para arreglar los datos de Imagen_portada
   try {
     const fixImagenPortadaData = require('./migrations/fix-imagen-portada-data');
