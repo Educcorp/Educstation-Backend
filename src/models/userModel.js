@@ -111,13 +111,38 @@ class User {
   // Actualizar avatar del usuario
   static async updateAvatar(userId, avatarData) {
     try {
+      // Verificar el tamaño de los datos
+      const dataSize = avatarData ? avatarData.length : 0;
+      console.log(`Tamaño de los datos del avatar: ${Math.round(dataSize/1024)} KB`);
+      
+      // Si los datos son demasiado grandes, rechazar
+      if (dataSize > 10 * 1024 * 1024) { // 10MB límite
+        console.error('Error: Avatar demasiado grande', { size: dataSize });
+        throw new Error('El avatar es demasiado grande. Máximo 10MB.');
+      }
+
       const [result] = await pool.execute(
         'UPDATE auth_user SET avatar = ? WHERE id = ?',
         [avatarData, userId]
       );
       return result.affectedRows > 0;
     } catch (error) {
+      // Registrar detalles específicos del error
       console.error('Error al actualizar avatar:', error);
+      console.error('Detalles del error:', {
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage
+      });
+      
+      // Si es un error de MySQL, proporcionar información más específica
+      if (error.code === 'ER_DATA_TOO_LONG') {
+        throw new Error('El avatar es demasiado grande para la columna de la base de datos');
+      } else if (error.code === 'ER_NET_PACKET_TOO_LARGE') {
+        throw new Error('El paquete de datos es demasiado grande para MySQL');
+      }
+      
       throw error;
     }
   }

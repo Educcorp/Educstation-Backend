@@ -14,6 +14,9 @@ function createConnectionConfig() {
     acquireTimeout: 60000,
     // Configurar un max_allowed_packet más grande (100MB)
     maxAllowedPacket: 104857600,
+    // Aumentar el límite de paquete para permitir imágenes más grandes
+    maxPreparedStatements: 16000,
+    multipleStatements: true,
     // Otras opciones para mejorar el manejo de grandes conjuntos de datos
     flags: ['-FOUND_ROWS']
   };

@@ -127,20 +127,40 @@ exports.getCurrentUser = async (req, res) => {
 exports.updateAvatar = async (req, res) => {
   try {
     const { avatarData } = req.body;
+    console.log('ID del usuario:', req.user.id);
+    console.log('Token decodificado:', req.user);
 
     if (!avatarData) {
+      console.log('No se proporcionaron datos para el avatar');
       return res.status(400).json({ detail: 'No se proporcionaron datos para el avatar' });
     }
 
-    const success = await User.updateAvatar(req.user.id, avatarData);
+    // Verificar tamaño del avatar (registrar información)
+    const dataSize = avatarData.length;
+    console.log(`Tamaño de datos recibidos: ${Math.round(dataSize/1024)} KB`);
 
-    if (!success) {
-      return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
+    try {
+      const success = await User.updateAvatar(req.user.id, avatarData);
+
+      if (!success) {
+        console.log('No se pudo actualizar el avatar - 0 filas afectadas');
+        return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
+      }
+
+      console.log('Avatar actualizado con éxito para el usuario ID:', req.user.id);
+      res.json({ detail: 'Avatar actualizado con éxito' });
+    } catch (dbError) {
+      console.error('Error específico de la base de datos al actualizar avatar:', dbError);
+      
+      // Manejar errores específicos de MySQL
+      if (dbError.message && dbError.message.includes('demasiado grande')) {
+        return res.status(413).json({ detail: dbError.message });
+      }
+      
+      throw dbError; // Propagar el error para el manejador general
     }
-
-    res.json({ detail: 'Avatar actualizado con éxito' });
   } catch (error) {
-    console.error('Error al actualizar avatar:', error);
+    console.error('Error general al actualizar avatar:', error);
     res.status(500).json({ detail: 'Error en el servidor' });
   }
 };
