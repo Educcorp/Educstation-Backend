@@ -178,13 +178,13 @@ exports.updateAvatar = async (req, res) => {
       // Usar userId en lugar de req.user.id
       const success = await User.updateAvatar(userId, avatarBase64);
 
-      if (!success) {
+    if (!success) {
         console.log('No se pudo actualizar el avatar - 0 filas afectadas');
-        return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
-      }
+      return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
+    }
 
       console.log('Avatar actualizado con éxito para el usuario ID:', userId);
-      res.json({ detail: 'Avatar actualizado con éxito' });
+    res.json({ detail: 'Avatar actualizado con éxito' });
     } catch (dbError) {
       console.error('Error específico de la base de datos al actualizar avatar:', dbError);
       
