@@ -188,4 +188,17 @@ router.put('/:id', authenticateToken, [...idValidator, ...publicacionValidator],
  */
 router.delete('/:id', authenticateToken, idValidator, publicacionesController.deletePublicacion);
 
+/**
+ * @api {get} /api/publicaciones/user/me Obtener publicaciones del usuario autenticado
+ * @apiName GetUserPublicaciones
+ * @apiGroup Publicaciones
+ * @apiDescription Obtiene las publicaciones creadas por el usuario autenticado
+ * 
+ * @apiQuery {Number} [limite=5] Cantidad de resultados a retornar
+ * @apiQuery {Number} [offset=0] Número de resultados a omitir (para paginación)
+ * 
+ * @apiSuccess {Object[]} publicaciones Lista de publicaciones del usuario
+ */
+router.get('/user/me', authenticateToken, publicacionesController.getPublicacionesByUserId);
+
 module.exports = router;

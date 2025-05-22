@@ -599,6 +599,54 @@ class Publicacion {
     }
   }
 
+  // Obtener publicaciones por ID de usuario
+  static async getByUserId(userId, limite = 10, offset = 0) {
+    try {
+      // Buscar primero si existe un administrador asociado a este usuario
+      const [admins] = await pool.execute(
+        'SELECT ID_administrador FROM Administrador WHERE ID_usuario = ?',
+        [userId]
+      );
+      
+      if (admins.length === 0) {
+        console.log(`No se encontró administrador para el usuario con ID ${userId}`);
+        return [];
+      }
+      
+      const adminId = admins[0].ID_administrador;
+      
+      // Obtener las publicaciones del administrador
+      const [publicaciones] = await pool.execute(
+        `SELECT p.*, a.Nombre as NombreAdmin 
+         FROM Publicaciones p
+         JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+         WHERE p.ID_administrador = ?
+         ORDER BY p.Fecha_creacion DESC
+         LIMIT ? OFFSET ?`,
+        [adminId, limite, offset]
+      );
+      
+      // Process Imagen_portada for each publication
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
+      
+      // Para cada publicación, obtener sus categorías
+      if (publicaciones.length > 0) {
+        for (const publicacion of publicaciones) {
+          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+          publicacion.categorias = categorias || [];
+        }
+      }
+      
+      console.log(`Recuperadas ${publicaciones.length} publicaciones del usuario ID ${userId}`);
+      return publicaciones;
+    } catch (error) {
+      console.error(`Error al obtener publicaciones del usuario ID ${userId}:`, error);
+      return [];
+    }
+  }
+
 }
 
 module.exports = Publicacion;

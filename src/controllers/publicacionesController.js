@@ -410,6 +410,26 @@ const advancedSearch = async (req, res) => {
   }
 };
 
+// Obtener publicaciones por ID de usuario
+const getPublicacionesByUserId = async (req, res) => {
+  try {
+    const userId = req.userId; // Obtener el ID del usuario autenticado
+    
+    if (!userId) {
+      return res.status(401).json({ detail: 'Usuario no autenticado' });
+    }
+    
+    const limite = req.query.limite ? parseInt(req.query.limite) : 5;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    
+    const publicaciones = await Publicacion.getByUserId(userId, limite, offset);
+    res.json(publicaciones);
+  } catch (error) {
+    console.error('Error al obtener publicaciones del usuario:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   getAllPublicaciones,
   getLatestPublicaciones,
@@ -422,5 +442,6 @@ module.exports = {
   searchByTitle,
   searchByContent,
   searchByTags,
-  advancedSearch
+  advancedSearch,
+  getPublicacionesByUserId
 };
