@@ -467,6 +467,11 @@ class Publicacion {
         [categoryIds, limite, offset]
       );
       
+      // Process Imagen_portada for each publication
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
+      
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
         for (const publicacion of publicaciones) {
