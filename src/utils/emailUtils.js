@@ -16,15 +16,15 @@ const setupTransporter = () => {
   // SOLUCIÓN TEMPORAL: Siempre usar el modo simulado hasta que se configuren correctamente las credenciales
   // Cuando estés listo para usar un servicio real, elimina esta línea y descomenta el código debajo
   const forceMockMode = false;
-  
+
   // Verificar si tenemos credenciales configuradas
   const hasCredentials = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
-  
+
   // Si estamos en producción Y tenemos credenciales, usamos el servicio real
   if (!forceMockMode && hasCredentials) {
     console.log('Configurando transporter de correo real');
     // Configuración para producción (ejemplo: usando SendGrid)
-    transporter = nodemailer.createTransport({
+    transporter = nodemailer.createTransporter({
       service: process.env.EMAIL_SERVICE || 'SendGrid',
       auth: {
         user: process.env.EMAIL_USER,
@@ -38,7 +38,7 @@ const setupTransporter = () => {
     } else {
       console.log('Modo de desarrollo: Los correos serán simulados');
     }
-    
+
     transporter = {
       sendMail: async (mailOptions) => {
         console.log('=== CORREO SIMULADO ===');
@@ -50,7 +50,7 @@ const setupTransporter = () => {
         console.log(`Contenido Texto:`);
         console.log(mailOptions.text ? mailOptions.text.substring(0, 500) + '...' : 'No hay contenido de texto');
         console.log('=== FIN DEL CORREO SIMULADO ===');
-        return { 
+        return {
           messageId: `simulado-${Date.now()}`,
           response: 'Correo simulado enviado correctamente'
         };
@@ -101,7 +101,7 @@ const sendEmail = async (to, subject, text, html) => {
  */
 const sendPasswordResetEmail = async (to, name, resetUrl) => {
   const subject = 'Restablecimiento de contraseña - EducStation';
-  
+
   const text = `
     Hola ${name},
     
@@ -117,7 +117,7 @@ const sendPasswordResetEmail = async (to, name, resetUrl) => {
     Saludos,
     El equipo de EducStation
   `;
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -188,11 +188,118 @@ const sendPasswordResetEmail = async (to, name, resetUrl) => {
     </body>
     </html>
   `;
-  
+
   return await sendEmail(to, subject, text, html);
+};
+
+/**
+ * Envía un correo desde el formulario de contacto
+ * @param {string} fromEmail - Email del remitente
+ * @param {string} fromName - Nombre del remitente
+ * @param {string} subject - Asunto del mensaje
+ * @param {string} message - Contenido del mensaje
+ * @returns {Promise} - Promesa con el resultado del envío
+ */
+const sendContactEmail = async (fromEmail, fromName, subject, message) => {
+  const emailSubject = `${subject} - Contacto desde EducStation`;
+
+  const text = `
+    Nuevo mensaje de contacto desde EducStation
+    
+    De: ${fromName} (${fromEmail})
+    Asunto: ${subject}
+    
+    Mensaje:
+    ${message}
+    
+    ---
+    Este mensaje fue enviado desde el formulario de contacto de EducStation.
+  `;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { 
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+        }
+        .container {
+          padding: 20px;
+          border: 1px solid #e5e5e5;
+          border-radius: 5px;
+        }
+        .header {
+          background-color: #1F4E4E;
+          padding: 15px;
+          color: white;
+          text-align: center;
+          border-radius: 5px 5px 0 0;
+          margin-bottom: 20px;
+        }
+        .content {
+          padding: 20px;
+        }
+        .info-box {
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 10px 0;
+        }
+        .message-box {
+          background-color: #fff;
+          padding: 20px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          margin: 15px 0;
+        }
+        .footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 12px;
+          color: #777;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>Nuevo Mensaje de Contacto</h2>
+        </div>
+        <div class="content">
+          <div class="info-box">
+            <p><strong>De:</strong> ${fromName}</p>
+            <p><strong>Email:</strong> ${fromEmail}</p>
+            <p><strong>Asunto:</strong> ${subject}</p>
+            <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p>
+          </div>
+          
+          <h3>Mensaje:</h3>
+          <div class="message-box">
+            ${message.replace(/\n/g, '<br>')}
+          </div>
+          
+          <p><strong>Responder a:</strong> <a href="mailto:${fromEmail}">${fromEmail}</a></p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} EducStation. Mensaje enviado desde formulario de contacto.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Enviar a educcorp3@gmail.com
+  return await sendEmail('educcorp3@gmail.com', emailSubject, text, html);
 };
 
 module.exports = {
   sendEmail,
-  sendPasswordResetEmail
-}; 
+  sendPasswordResetEmail,
+  sendContactEmail
+};
