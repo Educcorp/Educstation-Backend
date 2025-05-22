@@ -599,69 +599,27 @@ class Publicacion {
     }
   }
 
-  // Obtener publicaciones por ID de usuario
   static async getByUserId(userId, limite = 10, offset = 0) {
     try {
-      console.log('--- getByUserId ---');
-      console.log('userId recibido:', userId);
-      // Buscar el usuario
-      const [users] = await pool.execute(
-        'SELECT username, email FROM auth_user WHERE id = ?',
-        [userId]
-      );
-      console.log('Resultado de búsqueda de usuario:', users);
-      if (users.length === 0) {
-        console.log(`No se encontró usuario con ID ${userId}`);
-        return [];
-      }
-      const user = users[0];
-      console.log(`Usuario encontrado: ${user.username}, ${user.email}`);
-      // Buscar administrador por email
-      const [admins] = await pool.execute(
-        'SELECT ID_administrador FROM Administrador WHERE Correo_electronico = ?',
-        [user.email]
-      );
-      console.log('Resultado de búsqueda de administrador:', admins);
-      if (admins.length === 0) {
-        console.log(`No se encontró administrador con email ${user.email}`);
-        // Intento alternativo: buscar publicaciones por username (si existiera ese campo en Publicaciones)
-        // O devolver mensaje claro para depuración
-        return [];
-      }
-      const adminId = admins[0].ID_administrador;
-      console.log(`Administrador encontrado con ID: ${adminId}`);
-      // Obtener las publicaciones del administrador
+      // En vez de filtrar por usuario, devolvemos todas las publicaciones
       const [publicaciones] = await pool.execute(
         `SELECT p.*, a.Nombre as NombreAdmin 
          FROM Publicaciones p
          JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-         WHERE p.ID_administrador = ?
          ORDER BY p.Fecha_creacion DESC
          LIMIT ? OFFSET ?`,
-        [adminId, limite, offset]
+        [limite, offset]
       );
-      console.log('Publicaciones encontradas:', publicaciones);
-      // Si no se encuentran publicaciones, devolver mensaje especial para depuración
-      if (publicaciones.length === 0) {
-        console.log('No se hallaron publicaciones para este administrador.');
-        // Aquí podrías intentar una búsqueda alternativa si tienes otro campo de relación
-      }
-      // Process Imagen_portada for each publication
+      // Procesar portada e incluir categorías
       for (const publicacion of publicaciones) {
         this.processImagenPortada(publicacion);
+        const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+        publicacion.categorias = categorias || [];
       }
-      // Para cada publicación, obtener sus categorías
-      if (publicaciones.length > 0) {
-        for (const publicacion of publicaciones) {
-          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
-          publicacion.categorias = categorias || [];
-        }
-      }
-      console.log(`Recuperadas ${publicaciones.length} publicaciones del usuario ID ${userId} (admin ID ${adminId})`);
       return publicaciones;
     } catch (error) {
-      console.error(`Error al obtener publicaciones del usuario ID ${userId}:`, error);
-      return [];
+      console.error('Error al obtener todas las publicaciones para actividad reciente:', error);
+      throw error;
     }
   }
 
