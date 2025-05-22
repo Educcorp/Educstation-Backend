@@ -414,15 +414,15 @@ const advancedSearch = async (req, res) => {
 const getPublicacionesByUserId = async (req, res) => {
   try {
     const userId = req.userId; // Obtener el ID del usuario autenticado
-    
     if (!userId) {
       return res.status(401).json({ detail: 'Usuario no autenticado' });
     }
-    
-    const limite = req.query.limite ? parseInt(req.query.limite) : 5;
-    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    
-    const publicaciones = await Publicacion.getByUserId(userId, limite, offset);
+    // Asegura que los valores sean enteros válidos
+    const limite = parseInt(req.query.limite, 10);
+    const offset = parseInt(req.query.offset, 10);
+    const safeLimite = isNaN(limite) ? 10 : limite;
+    const safeOffset = isNaN(offset) ? 0 : offset;
+    const publicaciones = await Publicacion.getByUserId(userId, safeLimite, safeOffset);
     res.json(publicaciones);
   } catch (error) {
     console.error('Error al obtener publicaciones del usuario:', error);
