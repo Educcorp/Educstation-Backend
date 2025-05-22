@@ -111,8 +111,21 @@ class User {
   // Actualizar avatar del usuario
   static async updateAvatar(userId, avatarData) {
     try {
+      // Verificar parámetros para evitar undefined
+      if (userId === undefined || userId === null) {
+        throw new Error('ID de usuario no proporcionado');
+      }
+
+      if (avatarData === undefined) {
+        console.error('Error: avatarData es undefined');
+        throw new Error('Datos de avatar no proporcionados');
+      }
+
+      // Usar null explícitamente si avatarData está vacío pero no es undefined
+      const finalAvatarData = (avatarData === '') ? null : avatarData;
+      
       // Verificar el tamaño de los datos
-      const dataSize = avatarData ? avatarData.length : 0;
+      const dataSize = finalAvatarData ? finalAvatarData.length : 0;
       console.log(`Tamaño de los datos del avatar: ${Math.round(dataSize/1024)} KB`);
       
       // Si los datos son demasiado grandes, rechazar
@@ -123,7 +136,7 @@ class User {
 
       const [result] = await pool.execute(
         'UPDATE auth_user SET avatar = ? WHERE id = ?',
-        [avatarData, userId]
+        [finalAvatarData, userId]
       );
       return result.affectedRows > 0;
     } catch (error) {
@@ -133,7 +146,8 @@ class User {
         code: error.code,
         errno: error.errno,
         sqlState: error.sqlState,
-        sqlMessage: error.sqlMessage
+        sqlMessage: error.sqlMessage,
+        message: error.message
       });
       
       // Si es un error de MySQL, proporcionar información más específica
