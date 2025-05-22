@@ -174,7 +174,8 @@ const getUserDetails = async (req, res) => {
       first_name: user.first_name,
       last_name: user.last_name,
       is_admin: user.is_staff === 1,
-      is_superuser: user.is_superuser === 1
+      is_superuser: user.is_superuser === 1,
+      avatar: user.avatar
     });
   } catch (error) {
     console.error('Error al obtener detalles del usuario:', error);
