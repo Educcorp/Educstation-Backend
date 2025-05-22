@@ -126,9 +126,24 @@ exports.getCurrentUser = async (req, res) => {
 // Controlador para actualizar avatar del usuario
 exports.updateAvatar = async (req, res) => {
   try {
-    const { avatarData } = req.body;
-    console.log('ID del usuario:', req.user.id);
+    const { avatarData, userId: bodyUserId } = req.body;
+    
+    // Intentar obtener el ID de usuario del token decodificado o del cuerpo de la solicitud
+    const userId = req.user?.id || bodyUserId;
+    
+    console.log('ID del usuario obtenido:', {
+      'De token (req.user.id)': req.user?.id,
+      'Del cuerpo (bodyUserId)': bodyUserId,
+      'ID final utilizado': userId
+    });
+    
+    // Verificación adicional del token decodificado
     console.log('Token decodificado:', req.user);
+
+    if (!userId) {
+      console.error('Error: No se pudo determinar el ID del usuario');
+      return res.status(400).json({ detail: 'ID de usuario no proporcionado' });
+    }
 
     if (!avatarData) {
       console.log('No se proporcionaron datos para el avatar');
@@ -160,14 +175,15 @@ exports.updateAvatar = async (req, res) => {
     }
 
     try {
-      const success = await User.updateAvatar(req.user.id, avatarBase64);
+      // Usar userId en lugar de req.user.id
+      const success = await User.updateAvatar(userId, avatarBase64);
 
       if (!success) {
         console.log('No se pudo actualizar el avatar - 0 filas afectadas');
         return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
       }
 
-      console.log('Avatar actualizado con éxito para el usuario ID:', req.user.id);
+      console.log('Avatar actualizado con éxito para el usuario ID:', userId);
       res.json({ detail: 'Avatar actualizado con éxito' });
     } catch (dbError) {
       console.error('Error específico de la base de datos al actualizar avatar:', dbError);
