@@ -624,6 +624,8 @@ class Publicacion {
       console.log('Resultado de búsqueda de administrador:', admins);
       if (admins.length === 0) {
         console.log(`No se encontró administrador con email ${user.email}`);
+        // Intento alternativo: buscar publicaciones por username (si existiera ese campo en Publicaciones)
+        // O devolver mensaje claro para depuración
         return [];
       }
       const adminId = admins[0].ID_administrador;
@@ -639,6 +641,11 @@ class Publicacion {
         [adminId, limite, offset]
       );
       console.log('Publicaciones encontradas:', publicaciones);
+      // Si no se encuentran publicaciones, devolver mensaje especial para depuración
+      if (publicaciones.length === 0) {
+        console.log('No se hallaron publicaciones para este administrador.');
+        // Aquí podrías intentar una búsqueda alternativa si tienes otro campo de relación
+      }
       // Process Imagen_portada for each publication
       for (const publicacion of publicaciones) {
         this.processImagenPortada(publicacion);
