@@ -1,11 +1,18 @@
 const Comentario = require('../models/comentariosModel');
 const Publicacion = require('../models/publicacionesModel');
+const Usuario = require('../models/usuariosModel');
 const { validationResult } = require('express-validator');
 
 // Obtener comentarios de una publicación
 const getComentariosByPublicacion = async (req, res) => {
   try {
     const { publicacionId } = req.params;
+    
+    console.log('Obteniendo comentarios para publicación:', publicacionId);
+    
+    if (!publicacionId || publicacionId === 'undefined') {
+      return res.status(400).json({ message: 'ID de publicación no válido' });
+    }
     
     // Verificar que la publicación existe
     const publicacion = await Publicacion.findById(publicacionId);
@@ -30,8 +37,19 @@ const createComentario = async (req, res) => {
     }
     
     const { publicacionId } = req.params;
-    const { contenido } = req.body;
+    const { contenido, nickname } = req.body;
     const usuarioId = req.userId;
+    
+    console.log('Creando comentario:', { 
+      publicacionId, 
+      contenido, 
+      usuarioId,
+      nickname
+    });
+    
+    if (!publicacionId || publicacionId === 'undefined') {
+      return res.status(400).json({ message: 'ID de publicación no válido' });
+    }
     
     // Verificar que la publicación existe
     const publicacion = await Publicacion.findById(publicacionId);
@@ -39,23 +57,29 @@ const createComentario = async (req, res) => {
       return res.status(404).json({ message: 'Publicación no encontrada' });
     }
     
+    // Verificar que el usuario existe
+    const usuario = await Usuario.findById(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
     // Obtener nickname del usuario desde la sesión o desde el modelo de usuario
-    const nickname = req.user ? req.user.nickname : 'Usuario';
+    const userNickname = nickname || usuario.nickname || 'Usuario';
     
     const comentarioId = await Comentario.create({
       publicacionId,
       usuarioId,
-      nickname,
+      nickname: userNickname,
       contenido
     });
     
     // Obtener el comentario recién creado para devolverlo en la respuesta
-    const [nuevoComentario] = await Comentario.getByPublicacionId(publicacionId);
+    const nuevoComentario = await Comentario.findById(comentarioId);
     
     res.status(201).json(nuevoComentario);
   } catch (error) {
     console.error('Error al crear comentario:', error);
-    res.status(500).json({ message: 'Error del servidor' });
+    res.status(500).json({ message: 'Error del servidor', error: error.message });
   }
 };
 

@@ -1,17 +1,38 @@
 const { pool } = require('../config/database');
 
 class Comentario {
-  // Obtener comentarios por ID de publicación
-  static async getByPublicacionId(publicacionId) {
+  // Obtener un comentario por su ID
+  static async findById(comentarioId) {
     try {
       const [rows] = await pool.execute(
         `SELECT c.*, u.Nickname 
          FROM Comentarios c
          JOIN Usuarios u ON c.ID_Usuario = u.ID_usuarios
+         WHERE c.ID_comentario = ?`,
+        [comentarioId]
+      );
+      
+      return rows.length > 0 ? rows[0] : null;
+    } catch (error) {
+      console.error('Error al obtener comentario por ID:', error);
+      throw error;
+    }
+  }
+  
+  // Obtener comentarios por ID de publicación
+  static async getByPublicacionId(publicacionId) {
+    try {
+      console.log('Buscando comentarios para publicación ID:', publicacionId);
+      const [rows] = await pool.execute(
+        `SELECT c.*, u.Nickname as usuarioNombre
+         FROM Comentarios c
+         LEFT JOIN Usuarios u ON c.ID_Usuario = u.ID_usuarios
          WHERE c.ID_publicacion = ?
          ORDER BY c.Fecha_publicacion DESC`,
         [publicacionId]
       );
+      
+      console.log(`Se encontraron ${rows.length} comentarios`);
       return rows;
     } catch (error) {
       console.error('Error al obtener comentarios:', error);
@@ -24,6 +45,13 @@ class Comentario {
     const { publicacionId, usuarioId, nickname, contenido } = comentarioData;
     
     try {
+      console.log('Creando comentario con datos:', {
+        publicacionId,
+        usuarioId,
+        nickname,
+        contenido
+      });
+      
       const [result] = await pool.execute(
         `INSERT INTO Comentarios 
          (ID_publicacion, ID_Usuario, Nickname, Contenido) 
@@ -31,6 +59,7 @@ class Comentario {
         [publicacionId, usuarioId, nickname, contenido]
       );
       
+      console.log('Comentario creado con ID:', result.insertId);
       return result.insertId;
     } catch (error) {
       console.error('Error al crear comentario:', error);
