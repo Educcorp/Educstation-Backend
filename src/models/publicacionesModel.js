@@ -55,7 +55,6 @@ class Publicacion {
   // Obtener todas las publicaciones
   static async getAll(limite = 10, offset = 0, estado = null) {
     try {
-      // Obtener las publicaciones con sus administradores
       let query = `
         SELECT p.*, a.Nombre as NombreAdmin 
         FROM Publicaciones p
@@ -63,22 +62,24 @@ class Publicacion {
       `;
 
       const params = [];
+      const limitNum = parseInt(limite, 10) || 10;
+      const offsetNum = parseInt(offset, 10) || 0;
 
-      if (estado) {
+      if (estado && typeof estado === 'string' && estado.trim() !== '') {
         query += ' WHERE p.Estado = ?';
         params.push(estado);
       }
 
       query += ' ORDER BY p.Fecha_creacion DESC LIMIT ? OFFSET ?';
-      params.push(limite, offset);
+      params.push(limitNum, offsetNum);
+
+      console.log('Ejecutando consulta:', query, 'con params:', params);
 
       const [publicaciones] = await pool.execute(query, params);
-      
       // Normalize all posts data
       for (const publicacion of publicaciones) {
         this.processImagenPortada(publicacion);
       }
-      
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
         for (const publicacion of publicaciones) {
@@ -86,7 +87,6 @@ class Publicacion {
           publicacion.categorias = categorias || [];
         }
       }
-      
       console.log(`Recuperadas ${publicaciones.length} publicaciones con sus categorías`);
       return publicaciones;
     } catch (error) {
