@@ -601,25 +601,15 @@ class Publicacion {
 
   static async getByUserId(userId, limite = 10, offset = 0) {
     try {
-      // En vez de filtrar por usuario, devolvemos todas las publicaciones
+      // Solo devuelve los datos crudos, sin procesar portada ni categorías
       const [publicaciones] = await pool.execute(
-        `SELECT p.*, a.Nombre as NombreAdmin 
-         FROM Publicaciones p
-         JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-         ORDER BY p.Fecha_creacion DESC
-         LIMIT ? OFFSET ?`,
+        `SELECT * FROM Publicaciones ORDER BY Fecha_creacion DESC LIMIT ? OFFSET ?`,
         [limite, offset]
       );
-      // Procesar portada e incluir categorías
-      for (const publicacion of publicaciones) {
-        this.processImagenPortada(publicacion);
-        const categorias = await this.getCategorias(publicacion.ID_publicaciones);
-        publicacion.categorias = categorias || [];
-      }
       return publicaciones;
     } catch (error) {
-      console.error('Error al obtener todas las publicaciones para actividad reciente:', error);
-      throw error;
+      // Devuelve el error como string para mostrarlo en el frontend
+      return [{ error: error.message }];
     }
   }
 
