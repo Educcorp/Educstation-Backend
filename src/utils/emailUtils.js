@@ -1,43 +1,37 @@
 /**
- * Utilidades para envío de correos electrónicos
- * 
- * Este archivo contiene funciones para enviar correos electrónicos 
- * usando Nodemailer. Por ahora solo simula el envío, pero puede 
- * configurarse fácilmente para usar un servicio real.
+ * Utilidades para envío de correos electrónicos con Gmail
  */
 
 const nodemailer = require('nodemailer');
 
-// Variable para almacenar el transporter de nodemailer (configurado la primera vez que se usa)
+// Variable para almacenar el transporter de nodemailer
 let transporter = null;
 
-// Configurar el transporter de nodemailer
+// Configurar el transporter de nodemailer para Gmail
 const setupTransporter = () => {
-  // SOLUCIÓN TEMPORAL: Siempre usar el modo simulado hasta que se configuren correctamente las credenciales
-  // Cuando estés listo para usar un servicio real, elimina esta línea y descomenta el código debajo
-  const forceMockMode = false;
+  // Verificar si tenemos credenciales de Gmail configuradas (usando las variables existentes)
+  const hasGmailCredentials = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
 
-  // Verificar si tenemos credenciales configuradas
-  const hasCredentials = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
+  if (hasGmailCredentials) {
+    console.log('✅ Configurando transporter de Gmail con credenciales reales');
+    console.log('📧 Usuario Gmail:', process.env.EMAIL_USER);
+    console.log('🔐 Contraseña de aplicación:', process.env.EMAIL_PASSWORD ? 'Configurada ✅' : 'No configurada ❌');
+    console.log('📧 Email FROM:', process.env.EMAIL_FROM);
+    console.log('🔧 Servicio:', process.env.EMAIL_SERVICE || 'gmail');
 
-  // Si estamos en producción Y tenemos credenciales, usamos el servicio real
-  if (!forceMockMode && hasCredentials) {
-    console.log('Configurando transporter de correo real');
-    // Configuración para producción (ejemplo: usando SendGrid)
     transporter = nodemailer.createTransporter({
-      service: process.env.EMAIL_SERVICE || 'SendGrid',
+      service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
+        pass: process.env.EMAIL_PASSWORD, // Contraseña de aplicación de 16 caracteres
       },
     });
   } else {
-    // En desarrollo o si no hay credenciales en producción, simulamos el envío
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('ADVERTENCIA: Usando modo simulado de correo en producción.');
-    } else {
-      console.log('Modo de desarrollo: Los correos serán simulados');
-    }
+    // Modo simulado si no hay credenciales
+    console.log('⚠️ ADVERTENCIA: Credenciales de Gmail no configuradas. Usando modo simulado.');
+    console.log('Variables necesarias:');
+    console.log('- EMAIL_USER:', process.env.EMAIL_USER ? '✅ Configurada' : '❌ No configurada');
+    console.log('- EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '✅ Configurada' : '❌ No configurada');
 
     transporter = {
       sendMail: async (mailOptions) => {
@@ -75,7 +69,7 @@ const sendEmail = async (to, subject, text, html) => {
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'educstation@ejemplo.com',
+    from: `"EducStation" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`, // Usar EMAIL_FROM o EMAIL_USER
     to,
     subject,
     text,
@@ -84,10 +78,12 @@ const sendEmail = async (to, subject, text, html) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('Correo enviado:', info.messageId);
+    console.log('✅ Correo enviado exitosamente:', info.messageId);
+    console.log('📧 Enviado a:', to);
+    console.log('📝 Asunto:', subject);
     return info;
   } catch (error) {
-    console.error('Error al enviar correo:', error);
+    console.error('❌ Error al enviar correo:', error);
     throw error;
   }
 };
@@ -294,8 +290,9 @@ const sendContactEmail = async (fromEmail, fromName, subject, message) => {
     </html>
   `;
 
-  // Enviar a educcorp3@gmail.com
-  return await sendEmail('educcorp3@gmail.com', emailSubject, text, html);
+  // Enviar a la cuenta de Gmail configurada
+  const destinationEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'educcorp3@gmail.com';
+  return await sendEmail(destinationEmail, emailSubject, text, html);
 };
 
 module.exports = {
