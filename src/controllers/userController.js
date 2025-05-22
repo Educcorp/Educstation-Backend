@@ -139,8 +139,16 @@ exports.updateAvatar = async (req, res) => {
     const dataSize = avatarData.length;
     console.log(`Tamaño de datos recibidos: ${Math.round(dataSize/1024)} KB`);
 
+    // Extraer datos base64 si tienen el prefijo data:image
+    let avatarBase64 = avatarData;
+    if (avatarData.includes('base64,')) {
+      console.log('Formato data:URL detectado, extrayendo datos base64');
+      avatarBase64 = avatarData.split('base64,')[1];
+      console.log(`Tamaño después de extraer datos: ${Math.round(avatarBase64.length/1024)} KB`);
+    }
+
     try {
-      const success = await User.updateAvatar(req.user.id, avatarData);
+      const success = await User.updateAvatar(req.user.id, avatarBase64);
 
       if (!success) {
         console.log('No se pudo actualizar el avatar - 0 filas afectadas');
@@ -155,12 +163,16 @@ exports.updateAvatar = async (req, res) => {
       // Manejar errores específicos de MySQL
       if (dbError.message && dbError.message.includes('demasiado grande')) {
         return res.status(413).json({ detail: dbError.message });
+      } else if (dbError.code === 'ER_DATA_TOO_LONG') {
+        return res.status(413).json({ detail: 'La imagen es demasiado grande para almacenar en la base de datos' });
+      } else if (dbError.code === 'ER_NET_PACKET_TOO_LARGE') {
+        return res.status(413).json({ detail: 'La imagen excede el tamaño máximo permitido para el paquete de red' });
       }
       
       throw dbError; // Propagar el error para el manejador general
     }
   } catch (error) {
     console.error('Error general al actualizar avatar:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    res.status(500).json({ detail: 'Error en el servidor', message: error.message });
   }
 };
