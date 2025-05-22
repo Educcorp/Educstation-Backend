@@ -126,9 +126,24 @@ exports.getCurrentUser = async (req, res) => {
 // Controlador para actualizar avatar del usuario
 exports.updateAvatar = async (req, res) => {
   try {
-    const { avatarData } = req.body;
-    console.log('ID del usuario:', req.user.id);
+    const { avatarData, userId: bodyUserId } = req.body;
+    
+    // Intentar obtener el ID de usuario del token decodificado o del cuerpo de la solicitud
+    const userId = req.user?.id || bodyUserId;
+    
+    console.log('ID del usuario obtenido:', {
+      'De token (req.user.id)': req.user?.id,
+      'Del cuerpo (bodyUserId)': bodyUserId,
+      'ID final utilizado': userId
+    });
+    
+    // Verificación adicional del token decodificado
     console.log('Token decodificado:', req.user);
+
+    if (!userId) {
+      console.error('Error: No se pudo determinar el ID del usuario');
+      return res.status(400).json({ detail: 'ID de usuario no proporcionado' });
+    }
 
     if (!avatarData) {
       console.log('No se proporcionaron datos para el avatar');
@@ -143,20 +158,33 @@ exports.updateAvatar = async (req, res) => {
     let avatarBase64 = avatarData;
     if (avatarData.includes('base64,')) {
       console.log('Formato data:URL detectado, extrayendo datos base64');
-      avatarBase64 = avatarData.split('base64,')[1];
-      console.log(`Tamaño después de extraer datos: ${Math.round(avatarBase64.length/1024)} KB`);
+      const parts = avatarData.split('base64,');
+      if (parts.length >= 2 && parts[1]) {
+        avatarBase64 = parts[1];
+        console.log(`Tamaño después de extraer datos: ${Math.round(avatarBase64.length/1024)} KB`);
+      } else {
+        console.error('Error: Formato base64 inválido, no se pudo extraer la parte de datos');
+        return res.status(400).json({ detail: 'Formato de imagen inválido' });
+      }
+    }
+
+    // Verificación adicional para evitar valores undefined
+    if (!avatarBase64) {
+      console.error('Error: avatarBase64 es undefined o null después del procesamiento');
+      return res.status(400).json({ detail: 'Datos de imagen inválidos después del procesamiento' });
     }
 
     try {
-      const success = await User.updateAvatar(req.user.id, avatarBase64);
+      // Usar userId en lugar de req.user.id
+      const success = await User.updateAvatar(userId, avatarBase64);
 
-      if (!success) {
+    if (!success) {
         console.log('No se pudo actualizar el avatar - 0 filas afectadas');
-        return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
-      }
+      return res.status(400).json({ detail: 'No se pudo actualizar el avatar' });
+    }
 
-      console.log('Avatar actualizado con éxito para el usuario ID:', req.user.id);
-      res.json({ detail: 'Avatar actualizado con éxito' });
+      console.log('Avatar actualizado con éxito para el usuario ID:', userId);
+    res.json({ detail: 'Avatar actualizado con éxito' });
     } catch (dbError) {
       console.error('Error específico de la base de datos al actualizar avatar:', dbError);
       
@@ -167,6 +195,8 @@ exports.updateAvatar = async (req, res) => {
         return res.status(413).json({ detail: 'La imagen es demasiado grande para almacenar en la base de datos' });
       } else if (dbError.code === 'ER_NET_PACKET_TOO_LARGE') {
         return res.status(413).json({ detail: 'La imagen excede el tamaño máximo permitido para el paquete de red' });
+      } else if (dbError.message && dbError.message.includes('Bind parameters must not contain undefined')) {
+        return res.status(400).json({ detail: 'Parámetros de imagen inválidos' });
       }
       
       throw dbError; // Propagar el error para el manejador general
