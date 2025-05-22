@@ -58,7 +58,7 @@ class Publicacion {
       let query = `
         SELECT p.*, a.Nombre as NombreAdmin 
         FROM Publicaciones p
-        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+        LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
       `;
 
       const params = [];
@@ -83,8 +83,13 @@ class Publicacion {
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
         for (const publicacion of publicaciones) {
-          const categorias = await this.getCategorias(publicacion.ID_publicaciones);
-          publicacion.categorias = categorias || [];
+          try {
+            const categorias = await this.getCategorias(publicacion.ID_publicaciones);
+            publicacion.categorias = categorias || [];
+          } catch (err) {
+            console.error(`Error al obtener categorías para publicación ${publicacion.ID_publicaciones}:`, err);
+            publicacion.categorias = [];
+          }
         }
       }
       console.log(`Recuperadas ${publicaciones.length} publicaciones con sus categorías`);
