@@ -601,10 +601,12 @@ class Publicacion {
 
   static async getByUserId(userId, limite = 10, offset = 0) {
     try {
-      // Solo devuelve los datos crudos, sin procesar portada ni categorías
+      // Asegurar que los argumentos sean enteros
+      const limitNum = parseInt(limite, 10) || 10;
+      const offsetNum = parseInt(offset, 10) || 0;
       const [publicaciones] = await pool.execute(
         `SELECT * FROM Publicaciones ORDER BY Fecha_creacion DESC LIMIT ? OFFSET ?`,
-        [limite, offset]
+        [limitNum, offsetNum]
       );
       return publicaciones;
     } catch (error) {
