@@ -602,18 +602,33 @@ class Publicacion {
   // Obtener publicaciones por ID de usuario
   static async getByUserId(userId, limite = 10, offset = 0) {
     try {
-      // Buscar primero si existe un administrador asociado a este usuario
-      const [admins] = await pool.execute(
-        'SELECT ID_administrador FROM Administrador WHERE ID_usuario = ?',
+      // SOLUCIÓN ALTERNATIVA: Buscar el nombre de usuario por ID
+      const [users] = await pool.execute(
+        'SELECT username, email FROM auth_user WHERE id = ?',
         [userId]
       );
       
+      if (users.length === 0) {
+        console.log(`No se encontró usuario con ID ${userId}`);
+        return [];
+      }
+      
+      const user = users[0];
+      console.log(`Usuario encontrado: ${user.username}, ${user.email}`);
+      
+      // Buscar administrador por email (asumiendo que email es único y coincide)
+      const [admins] = await pool.execute(
+        'SELECT ID_administrador FROM Administrador WHERE Correo_electronico = ?',
+        [user.email]
+      );
+      
       if (admins.length === 0) {
-        console.log(`No se encontró administrador para el usuario con ID ${userId}`);
+        console.log(`No se encontró administrador con email ${user.email}`);
         return [];
       }
       
       const adminId = admins[0].ID_administrador;
+      console.log(`Administrador encontrado con ID: ${adminId}`);
       
       // Obtener las publicaciones del administrador
       const [publicaciones] = await pool.execute(
@@ -639,7 +654,7 @@ class Publicacion {
         }
       }
       
-      console.log(`Recuperadas ${publicaciones.length} publicaciones del usuario ID ${userId}`);
+      console.log(`Recuperadas ${publicaciones.length} publicaciones del usuario ID ${userId} (admin ID ${adminId})`);
       return publicaciones;
     } catch (error) {
       console.error(`Error al obtener publicaciones del usuario ID ${userId}:`, error);
