@@ -317,23 +317,6 @@ class Publicacion {
     }
   }
 
-  // Obtener comentarios de una publicación
-  static async getComentarios(id) {
-    try {
-      const [rows] = await pool.execute(
-        `SELECT c.* 
-         FROM Comentarios c
-         WHERE c.ID_publicacion = ?
-         ORDER BY c.Fecha_publicacion DESC`,
-        [id]
-      );
-      return rows;
-    } catch (error) {
-      console.error('Error al obtener comentarios de la publicación:', error);
-      throw error;
-    }
-  }
-
   // Obtener imágenes de una publicación
   static async getImagenes(id) {
     try {
