@@ -1,11 +1,12 @@
 const { pool } = require('../config/database');
+const bcrypt = require('bcrypt');
 
 class Usuario {
   // Encontrar un usuario por su ID
   static async findById(id) {
     try {
       const [rows] = await pool.execute(
-        `SELECT * FROM Usuarios WHERE ID_usuarios = ?`,
+        'SELECT * FROM Usuarios WHERE ID_usuarios = ?',
         [id]
       );
       return rows.length > 0 ? rows[0] : null;

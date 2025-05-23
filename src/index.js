@@ -7,6 +7,7 @@ const { testConnection, pool } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const publicacionesRoutes = require('./routes/publicacionesRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
+const comentariosRoutes = require('./routes/comentariosRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 
@@ -110,6 +111,21 @@ async function runMigrations() {
           )
         `);
 
+    // Crear tabla Comentarios
+    console.log('Creando tabla Comentarios...');
+    await pool.query(`
+          CREATE TABLE IF NOT EXISTS Comentarios (
+            ID_comentario INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+            ID_publicacion INT NOT NULL,
+            ID_Usuario INT NOT NULL,
+            Nickname VARCHAR(40) NOT NULL,
+            Contenido TEXT NOT NULL,
+            Fecha_publicacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (ID_publicacion) REFERENCES Publicaciones(ID_publicaciones) ON DELETE CASCADE,
+            FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_usuarios) ON DELETE CASCADE
+          )
+        `);
+
     // Crear tabla Imagenes
     console.log('Creando tabla Imagenes...');
     await pool.query(`
@@ -206,6 +222,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/publicaciones', publicacionesRoutes);
 app.use('/api/categorias', categoriasRoutes);
+app.use('/api/comentarios', comentariosRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/contact', contactRoutes);
