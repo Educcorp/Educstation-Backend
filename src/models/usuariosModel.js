@@ -29,7 +29,7 @@ class Usuario {
         return user;
       }
       
-      // If not found in auth_user, try Usuarios table
+      // If not found in auth_user, try Usuarios table (legacy support)
       console.log('Usuario no encontrado en auth_user, buscando en tabla Usuarios');
       const [usuarios] = await pool.execute(
         'SELECT * FROM Usuarios WHERE ID_usuarios = ?',

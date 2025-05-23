@@ -11,11 +11,11 @@ class Comentario {
         return null;
       }
       
-      // Intentar primero con JOIN a Usuarios
+      // Intentar primero con JOIN a auth_user en lugar de Usuarios
       const [rows] = await pool.execute(
-        `SELECT c.*, u.Nickname 
+        `SELECT c.*, u.username as Nickname 
          FROM Comentarios c
-         LEFT JOIN Usuarios u ON c.ID_Usuario = u.ID_usuarios
+         LEFT JOIN auth_user u ON c.ID_Usuario = u.id
          WHERE c.ID_comentario = ?`,
         [comentarioId]
       );
@@ -49,9 +49,9 @@ class Comentario {
     try {
       console.log('Buscando comentarios para publicación ID:', publicacionId);
       const [rows] = await pool.execute(
-        `SELECT c.*, u.Nickname as usuarioNombre
+        `SELECT c.*, u.username as usuarioNombre
          FROM Comentarios c
-         LEFT JOIN Usuarios u ON c.ID_Usuario = u.ID_usuarios
+         LEFT JOIN auth_user u ON c.ID_Usuario = u.id
          WHERE c.ID_publicacion = ?
          ORDER BY c.Fecha_publicacion DESC`,
         [publicacionId]
@@ -94,11 +94,28 @@ class Comentario {
         usuarioIdNum
       });
       
+      // Verificar que el usuario existe en auth_user
+      const [userExists] = await pool.execute(
+        `SELECT id, username FROM auth_user WHERE id = ?`,
+        [usuarioIdNum]
+      );
+      
+      if (userExists.length === 0) {
+        throw new Error(`Usuario con ID ${usuarioIdNum} no existe en auth_user`);
+      }
+      
+      console.log(`Usuario verificado: ${userExists[0].username} (ID: ${userExists[0].id})`);
+      
+      // Usar el nickname de auth_user
+      const userNickname = userExists[0].username;
+      
+      // Modificar la consulta para ignorar la restricción de clave foránea con Usuarios
+      // y usar directamente el ID de auth_user
       const [result] = await pool.execute(
         `INSERT INTO Comentarios 
          (ID_publicacion, ID_Usuario, Nickname, Contenido) 
          VALUES (?, ?, ?, ?)`,
-        [publicacionIdNum, usuarioIdNum, nickname, contenido]
+        [publicacionIdNum, usuarioIdNum, userNickname, contenido]
       );
       
       console.log('Comentario creado con ID:', result.insertId);

@@ -279,6 +279,15 @@ async function startServer() {
     console.error('Error al ejecutar migración para arreglar datos de Imagen_portada:', error);
   }
 
+  // Ejecutar migración para actualizar la clave foránea de Comentarios
+  try {
+    const updateComentariosForeignKey = require('./migrations/update-comentarios-foreign-key');
+    await updateComentariosForeignKey();
+    console.log('Migración para actualizar clave foránea de Comentarios completada');
+  } catch (error) {
+    console.error('Error al ejecutar migración para actualizar clave foránea de Comentarios:', error);
+  }
+
   // Ejecutar migraciones primero
   await runMigrations();
 

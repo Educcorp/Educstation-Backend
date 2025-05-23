@@ -57,52 +57,92 @@ const createComentario = async (req, res) => {
       contenido: contenido.substring(0, 30) + (contenido.length > 30 ? '...' : '')
     });
     
-    // Verificar que la publicación existe
-    const publicacion = await Publicacion.findById(publicacionId);
-    if (!publicacion) {
-      console.log(`Publicación con ID ${publicacionId} no encontrada`);
-      return res.status(404).json({ message: 'Publicación no encontrada' });
+    try {
+      // Verificar que la publicación existe
+      console.log(`Buscando publicación con ID: ${publicacionId}`);
+      const publicacion = await Publicacion.findById(publicacionId);
+      
+      if (!publicacion) {
+        console.log(`Publicación con ID ${publicacionId} no encontrada`);
+        return res.status(404).json({ message: 'Publicación no encontrada' });
+      }
+      
+      console.log(`Publicación encontrada: ${publicacion.Titulo}`);
+    } catch (error) {
+      console.error(`Error al buscar publicación ${publicacionId}:`, error);
+      return res.status(500).json({ message: 'Error al verificar la publicación', error: error.message });
     }
     
-    console.log(`Publicación encontrada: ${publicacion.Titulo}`);
-    
-    // Obtener información del usuario para el nickname
-    console.log(`Buscando usuario con ID: ${usuarioId}`);
-    const usuario = await Usuario.findById(usuarioId);
-    if (!usuario) {
-      console.log(`Usuario con ID ${usuarioId} no encontrado. Detalles del token:`, req.user);
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    try {
+      // Obtener información del usuario para el nickname
+      console.log(`Buscando usuario con ID: ${usuarioId}`);
+      const usuario = await Usuario.findById(usuarioId);
+      
+      if (!usuario) {
+        console.log(`Usuario con ID ${usuarioId} no encontrado. Detalles del token:`, req.user);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      console.log('Usuario encontrado:', {
+        id: usuario.ID_usuarios,
+        nickname: usuario.Nickname || usuario.username,
+        email: usuario.email || usuario.Correo_electronico
+      });
+      
+      // Usar el Nickname si existe, de lo contrario usar username
+      const nickname = usuario.Nickname || usuario.username;
+      
+      try {
+        // Crear el comentario
+        console.log('Intentando crear comentario en la base de datos con datos:', {
+          publicacionId,
+          usuarioId,
+          nickname,
+          contenidoLength: contenido.length
+        });
+        
+        const comentarioId = await Comentario.create({
+          publicacionId,
+          usuarioId,
+          nickname,
+          contenido
+        });
+        
+        console.log(`Comentario creado con ID: ${comentarioId}`);
+        
+        // Obtener el comentario recién creado para devolverlo
+        const nuevoComentario = await Comentario.findById(comentarioId);
+        
+        if (!nuevoComentario) {
+          console.error(`Comentario creado con ID ${comentarioId} pero no se pudo recuperar`);
+          return res.status(500).json({ message: 'El comentario se creó pero no se pudo recuperar' });
+        }
+        
+        console.log('Comentario recuperado:', nuevoComentario);
+        
+        return res.status(201).json({
+          message: 'Comentario creado exitosamente',
+          comentario: nuevoComentario
+        });
+      } catch (error) {
+        console.error('Error específico al crear comentario en la base de datos:', error);
+        return res.status(500).json({ 
+          message: 'Error al crear el comentario en la base de datos',
+          error: error.message,
+          stack: error.stack
+        });
+      }
+    } catch (error) {
+      console.error(`Error al buscar usuario ${usuarioId}:`, error);
+      return res.status(500).json({ 
+        message: 'Error al verificar el usuario',
+        error: error.message
+      });
     }
-    
-    console.log('Usuario encontrado:', {
-      id: usuario.ID_usuarios,
-      nickname: usuario.Nickname || usuario.username,
-      email: usuario.email || usuario.Correo_electronico
-    });
-    
-    // Usar el Nickname si existe, de lo contrario usar username
-    const nickname = usuario.Nickname || usuario.username;
-    
-    // Crear el comentario
-    const comentarioId = await Comentario.create({
-      publicacionId,
-      usuarioId,
-      nickname,
-      contenido
-    });
-    
-    console.log(`Comentario creado con ID: ${comentarioId}`);
-    
-    // Obtener el comentario recién creado para devolverlo
-    const nuevoComentario = await Comentario.findById(comentarioId);
-    
-    res.status(201).json({
-      message: 'Comentario creado exitosamente',
-      comentario: nuevoComentario
-    });
   } catch (error) {
-    console.error('Error detallado al crear comentario:', error);
-    res.status(500).json({ message: 'Error del servidor' });
+    console.error('Error general al crear comentario:', error);
+    console.error('Stack trace completo:', error.stack);
+    return res.status(500).json({ message: 'Error del servidor', error: error.message });
   }
 };
 
