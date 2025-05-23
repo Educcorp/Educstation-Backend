@@ -39,7 +39,15 @@ const createComentario = async (req, res) => {
     
     const { publicacionId } = req.params;
     const { contenido } = req.body;
-    const usuarioId = req.user.id; // Obtenido del middleware de autenticación
+    
+    // Usar userId en lugar de id (corregido)
+    const usuarioId = req.user.userId; 
+    
+    console.log('Datos para crear comentario:', {
+      publicacionId,
+      usuarioId,
+      contenido: contenido.substring(0, 30) + '...' // Log parcial del contenido
+    });
     
     // Verificar que la publicación existe
     const publicacion = await Publicacion.findById(publicacionId);
@@ -53,11 +61,19 @@ const createComentario = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
     
+    console.log('Usuario encontrado:', {
+      id: usuario.ID_usuarios,
+      nickname: usuario.Nickname || usuario.username
+    });
+    
+    // Usar el Nickname si existe, de lo contrario usar username
+    const nickname = usuario.Nickname || usuario.username;
+    
     // Crear el comentario
     const comentarioId = await Comentario.create({
       publicacionId,
       usuarioId,
-      nickname: usuario.Nickname,
+      nickname,
       contenido
     });
     
@@ -85,7 +101,13 @@ const updateComentario = async (req, res) => {
     
     const { comentarioId } = req.params;
     const { contenido } = req.body;
-    const usuarioId = req.user.id; // Obtenido del middleware de autenticación
+    const usuarioId = req.user.userId; // Corregido: usar userId en lugar de id
+    
+    console.log('Actualizando comentario:', {
+      comentarioId,
+      usuarioId,
+      contenido: contenido.substring(0, 30) + '...' // Log parcial del contenido
+    });
     
     // Verificar que el comentario existe
     const comentario = await Comentario.findById(comentarioId);
@@ -121,7 +143,12 @@ const updateComentario = async (req, res) => {
 const deleteComentario = async (req, res) => {
   try {
     const { comentarioId } = req.params;
-    const usuarioId = req.user.id; // Obtenido del middleware de autenticación
+    const usuarioId = req.user.userId; // Corregido: usar userId en lugar de id
+    
+    console.log('Eliminando comentario:', {
+      comentarioId,
+      usuarioId
+    });
     
     // Verificar que el comentario existe
     const comentario = await Comentario.findById(comentarioId);
