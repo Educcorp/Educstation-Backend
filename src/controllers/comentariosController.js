@@ -2,6 +2,7 @@ const Comentario = require('../models/comentariosModel');
 const Publicacion = require('../models/publicacionesModel');
 const Usuario = require('../models/usuariosModel');
 const { validationResult } = require('express-validator');
+const { pool } = require('../config/database');
 
 // Obtener comentarios de una publicación
 const getComentariosByPublicacion = async (req, res) => {
@@ -57,6 +58,12 @@ const createComentario = async (req, res) => {
       contenido: contenido.substring(0, 30) + (contenido.length > 30 ? '...' : '')
     });
     
+    // Verificar que tenemos un usuarioId válido
+    if (!usuarioId) {
+      console.error('Error: No se pudo obtener usuarioId del token');
+      return res.status(400).json({ message: 'Token de usuario inválido' });
+    }
+    
     try {
       // Verificar que la publicación existe
       console.log(`Buscando publicación con ID: ${publicacionId}`);
@@ -80,7 +87,64 @@ const createComentario = async (req, res) => {
       
       if (!usuario) {
         console.log(`Usuario con ID ${usuarioId} no encontrado. Detalles del token:`, req.user);
-        return res.status(404).json({ message: 'Usuario no encontrado' });
+        
+        // Verificar directamente en auth_user
+        console.log('Verificando directamente en auth_user...');
+        const [authUserCheck] = await pool.execute(
+          'SELECT id, username, email FROM auth_user WHERE id = ?',
+          [usuarioId]
+        );
+        
+        if (authUserCheck.length === 0) {
+          console.error(`Usuario con ID ${usuarioId} no existe en auth_user`);
+          return res.status(404).json({ message: 'Usuario no encontrado en la base de datos' });
+        } else {
+          console.log('Usuario encontrado en auth_user:', authUserCheck[0]);
+          // Usar los datos directamente de auth_user
+          const authUser = authUserCheck[0];
+          const nickname = authUser.username;
+          
+          try {
+            // Crear el comentario usando los datos de auth_user
+            console.log('Intentando crear comentario con datos de auth_user:', {
+              publicacionId,
+              usuarioId,
+              nickname,
+              contenidoLength: contenido.length
+            });
+            
+            const comentarioId = await Comentario.create({
+              publicacionId,
+              usuarioId,
+              nickname,
+              contenido
+            });
+            
+            console.log(`Comentario creado con ID: ${comentarioId}`);
+            
+            // Obtener el comentario recién creado para devolverlo
+            const nuevoComentario = await Comentario.findById(comentarioId);
+            
+            if (!nuevoComentario) {
+              console.error(`Comentario creado con ID ${comentarioId} pero no se pudo recuperar`);
+              return res.status(500).json({ message: 'El comentario se creó pero no se pudo recuperar' });
+            }
+            
+            console.log('Comentario recuperado:', nuevoComentario);
+            
+            return res.status(201).json({
+              message: 'Comentario creado exitosamente',
+              comentario: nuevoComentario
+            });
+          } catch (error) {
+            console.error('Error específico al crear comentario en la base de datos:', error);
+            return res.status(500).json({ 
+              message: 'Error al crear el comentario en la base de datos',
+              error: error.message,
+              stack: error.stack
+            });
+          }
+        }
       }
       
       console.log('Usuario encontrado:', {

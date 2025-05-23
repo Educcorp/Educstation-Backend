@@ -288,6 +288,15 @@ async function startServer() {
     console.error('Error al ejecutar migración para actualizar clave foránea de Comentarios:', error);
   }
 
+  // Ejecutar migración para arreglar las restricciones de Comentarios
+  try {
+    const fixComentariosConstraints = require('./migrations/fix-comentarios-constraints');
+    await fixComentariosConstraints();
+    console.log('Migración para arreglar restricciones de Comentarios completada');
+  } catch (error) {
+    console.error('Error al ejecutar migración para arreglar restricciones de Comentarios:', error);
+  }
+
   // Ejecutar migraciones primero
   await runMigrations();
 
