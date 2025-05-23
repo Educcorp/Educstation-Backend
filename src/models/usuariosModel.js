@@ -5,11 +5,44 @@ class Usuario {
   // Encontrar un usuario por su ID
   static async findById(id) {
     try {
-      const [rows] = await pool.execute(
+      console.log(`Buscando usuario con ID: ${id}`);
+      
+      // First try to find in auth_user table
+      const [authUsers] = await pool.execute(
+        'SELECT * FROM auth_user WHERE id = ?',
+        [id]
+      );
+      
+      if (authUsers.length > 0) {
+        console.log(`Usuario encontrado en auth_user: ${authUsers[0].username}`);
+        // Map auth_user fields to match expected format
+        const user = {
+          ID_usuarios: authUsers[0].id,
+          Nickname: authUsers[0].username,
+          username: authUsers[0].username,
+          Correo_electronico: authUsers[0].email,
+          email: authUsers[0].email,
+          Nombre_Completo: `${authUsers[0].first_name} ${authUsers[0].last_name}`,
+          first_name: authUsers[0].first_name,
+          last_name: authUsers[0].last_name
+        };
+        return user;
+      }
+      
+      // If not found in auth_user, try Usuarios table
+      console.log('Usuario no encontrado en auth_user, buscando en tabla Usuarios');
+      const [usuarios] = await pool.execute(
         'SELECT * FROM Usuarios WHERE ID_usuarios = ?',
         [id]
       );
-      return rows.length > 0 ? rows[0] : null;
+      
+      if (usuarios.length > 0) {
+        console.log(`Usuario encontrado en Usuarios: ${usuarios[0].Nickname}`);
+        return usuarios[0];
+      }
+      
+      console.log(`No se encontró usuario con ID ${id} en ninguna tabla`);
+      return null;
     } catch (error) {
       console.error('Error al buscar usuario por ID:', error);
       throw error;
@@ -19,11 +52,34 @@ class Usuario {
   // Encontrar un usuario por su nombre de usuario
   static async findByUsername(username) {
     try {
-      const [rows] = await pool.execute(
-        `SELECT * FROM Usuarios WHERE username = ?`,
+      // First try auth_user table
+      const [authUsers] = await pool.execute(
+        `SELECT * FROM auth_user WHERE username = ?`,
         [username]
       );
-      return rows.length > 0 ? rows[0] : null;
+      
+      if (authUsers.length > 0) {
+        // Map auth_user fields to match expected format
+        const user = {
+          ID_usuarios: authUsers[0].id,
+          Nickname: authUsers[0].username,
+          username: authUsers[0].username,
+          Correo_electronico: authUsers[0].email,
+          email: authUsers[0].email,
+          Nombre_Completo: `${authUsers[0].first_name} ${authUsers[0].last_name}`,
+          first_name: authUsers[0].first_name,
+          last_name: authUsers[0].last_name
+        };
+        return user;
+      }
+      
+      // If not found, try Usuarios table
+      const [usuarios] = await pool.execute(
+        `SELECT * FROM Usuarios WHERE Nickname = ?`,
+        [username]
+      );
+      
+      return usuarios.length > 0 ? usuarios[0] : null;
     } catch (error) {
       console.error('Error al buscar usuario por nombre de usuario:', error);
       throw error;

@@ -40,30 +40,44 @@ const createComentario = async (req, res) => {
     const { publicacionId } = req.params;
     const { contenido } = req.body;
     
+    // Log completo del objeto req.user para depuración
+    console.log('Objeto req.user completo:', JSON.stringify(req.user));
+    
     // Usar userId en lugar de id (corregido)
     const usuarioId = req.user.userId; 
     
     console.log('Datos para crear comentario:', {
       publicacionId,
       usuarioId,
-      contenido: contenido.substring(0, 30) + '...' // Log parcial del contenido
+      tokenInfo: {
+        userId: req.user.userId,
+        iat: req.user.iat,
+        exp: req.user.exp
+      },
+      contenido: contenido.substring(0, 30) + (contenido.length > 30 ? '...' : '')
     });
     
     // Verificar que la publicación existe
     const publicacion = await Publicacion.findById(publicacionId);
     if (!publicacion) {
+      console.log(`Publicación con ID ${publicacionId} no encontrada`);
       return res.status(404).json({ message: 'Publicación no encontrada' });
     }
     
+    console.log(`Publicación encontrada: ${publicacion.Titulo}`);
+    
     // Obtener información del usuario para el nickname
+    console.log(`Buscando usuario con ID: ${usuarioId}`);
     const usuario = await Usuario.findById(usuarioId);
     if (!usuario) {
+      console.log(`Usuario con ID ${usuarioId} no encontrado. Detalles del token:`, req.user);
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
     
     console.log('Usuario encontrado:', {
       id: usuario.ID_usuarios,
-      nickname: usuario.Nickname || usuario.username
+      nickname: usuario.Nickname || usuario.username,
+      email: usuario.email || usuario.Correo_electronico
     });
     
     // Usar el Nickname si existe, de lo contrario usar username
@@ -77,6 +91,8 @@ const createComentario = async (req, res) => {
       contenido
     });
     
+    console.log(`Comentario creado con ID: ${comentarioId}`);
+    
     // Obtener el comentario recién creado para devolverlo
     const nuevoComentario = await Comentario.findById(comentarioId);
     
@@ -85,7 +101,7 @@ const createComentario = async (req, res) => {
       comentario: nuevoComentario
     });
   } catch (error) {
-    console.error('Error al crear comentario:', error);
+    console.error('Error detallado al crear comentario:', error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 };

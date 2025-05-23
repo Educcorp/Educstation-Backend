@@ -4,17 +4,42 @@ class Comentario {
   // Obtener un comentario por su ID
   static async findById(comentarioId) {
     try {
+      console.log(`Buscando comentario con ID: ${comentarioId}`);
+      
+      if (!comentarioId) {
+        console.error('ID de comentario no proporcionado');
+        return null;
+      }
+      
+      // Intentar primero con JOIN a Usuarios
       const [rows] = await pool.execute(
         `SELECT c.*, u.Nickname 
          FROM Comentarios c
-         JOIN Usuarios u ON c.ID_Usuario = u.ID_usuarios
+         LEFT JOIN Usuarios u ON c.ID_Usuario = u.ID_usuarios
          WHERE c.ID_comentario = ?`,
         [comentarioId]
       );
       
-      return rows.length > 0 ? rows[0] : null;
+      if (rows.length > 0) {
+        console.log(`Comentario encontrado: ${rows[0].ID_comentario}`);
+        return rows[0];
+      }
+      
+      // Si no se encuentra, intentar sin el JOIN
+      const [rowsSimple] = await pool.execute(
+        `SELECT * FROM Comentarios WHERE ID_comentario = ?`,
+        [comentarioId]
+      );
+      
+      if (rowsSimple.length > 0) {
+        console.log(`Comentario encontrado (sin JOIN): ${rowsSimple[0].ID_comentario}`);
+        return rowsSimple[0];
+      }
+      
+      console.log(`No se encontró comentario con ID: ${comentarioId}`);
+      return null;
     } catch (error) {
-      console.error('Error al obtener comentario por ID:', error);
+      console.error(`Error al obtener comentario por ID ${comentarioId}:`, error);
       throw error;
     }
   }
@@ -49,20 +74,38 @@ class Comentario {
         publicacionId,
         usuarioId,
         nickname,
-        contenido
+        contenido: contenido.substring(0, 30) + (contenido.length > 30 ? '...' : '')
+      });
+      
+      // Verificar que los IDs son números válidos
+      const publicacionIdNum = parseInt(publicacionId, 10);
+      const usuarioIdNum = parseInt(usuarioId, 10);
+      
+      if (isNaN(publicacionIdNum)) {
+        throw new Error(`ID de publicación inválido: ${publicacionId}`);
+      }
+      
+      if (isNaN(usuarioIdNum)) {
+        throw new Error(`ID de usuario inválido: ${usuarioId}`);
+      }
+      
+      console.log('IDs convertidos a números:', {
+        publicacionIdNum,
+        usuarioIdNum
       });
       
       const [result] = await pool.execute(
         `INSERT INTO Comentarios 
          (ID_publicacion, ID_Usuario, Nickname, Contenido) 
          VALUES (?, ?, ?, ?)`,
-        [publicacionId, usuarioId, nickname, contenido]
+        [publicacionIdNum, usuarioIdNum, nickname, contenido]
       );
       
       console.log('Comentario creado con ID:', result.insertId);
       return result.insertId;
     } catch (error) {
-      console.error('Error al crear comentario:', error);
+      console.error('Error detallado al crear comentario:', error);
+      console.error('Stack trace:', error.stack);
       throw error;
     }
   }
