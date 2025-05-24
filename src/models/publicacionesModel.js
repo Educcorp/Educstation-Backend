@@ -61,25 +61,24 @@ class Publicacion {
         LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
       `;
 
-      const params = [];
       const limitNum = parseInt(limite, 10) || 10;
       const offsetNum = parseInt(offset, 10) || 0;
 
       if (estado && typeof estado === 'string' && estado.trim() !== '') {
-        query += ' WHERE p.Estado = ?';
-        params.push(estado);
+        query += ` WHERE p.Estado = '${estado}'`;
       }
 
-      query += ' ORDER BY p.Fecha_creacion DESC LIMIT ? OFFSET ?';
-      params.push(limitNum, offsetNum);
+      query += ` ORDER BY p.Fecha_creacion DESC LIMIT ${limitNum} OFFSET ${offsetNum}`;
 
-      console.log('Ejecutando consulta:', query, 'con params:', params);
+      console.log('Ejecutando consulta getAll:', query);
 
-      const [publicaciones] = await pool.execute(query, params);
-      // Normalize all posts data
+      const [publicaciones] = await pool.query(query);
+      
+      // Procesar imágenes de portada
       for (const publicacion of publicaciones) {
         this.processImagenPortada(publicacion);
       }
+      
       // Para cada publicación, obtener sus categorías
       if (publicaciones.length > 0) {
         for (const publicacion of publicaciones) {
@@ -103,19 +102,25 @@ class Publicacion {
   // Obtener las últimas publicaciones (versión simplificada)
   static async getLatest(limite = 10) {
     try {
-      // Consulta simplificada solo para publicaciones recientes en estado publicado
-      // para servir como alternativa cuando falla el método principal
+      // Asegurar que el límite sea un entero válido
+      const limitNum = parseInt(limite, 10) || 10;
+      
+      // Consulta simplificada usando query en lugar de execute
       const query = `
         SELECT p.*, a.Nombre as NombreAdmin 
         FROM Publicaciones p
-        JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-        WHERE p.Estado = 'publicado'
+        LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
         ORDER BY p.Fecha_creacion DESC 
-        LIMIT ?
+        LIMIT ${limitNum}
       `;
 
-      console.log(`Ejecutando consulta getLatest con límite ${limite}`);
-      const [publicaciones] = await pool.execute(query, [limite]);
+      console.log(`Ejecutando consulta getLatest con límite ${limitNum}`);
+      const [publicaciones] = await pool.query(query);
+      
+      // Procesar imágenes de portada
+      for (const publicacion of publicaciones) {
+        this.processImagenPortada(publicacion);
+      }
       
       // Intentamos obtener categorías, pero si falla no interrumpimos
       if (publicaciones.length > 0) {
