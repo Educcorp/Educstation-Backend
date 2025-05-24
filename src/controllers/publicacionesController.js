@@ -430,6 +430,41 @@ const getPublicacionesByUserId = async (req, res) => {
   }
 };
 
+// Obtener publicaciones por ID de administrador
+const getPublicacionesByAdminId = async (req, res) => {
+  try {
+    // Si no hay adminId en la solicitud, intentamos obtenerlo
+    let adminId;
+    
+    if (req.adminId) {
+      adminId = req.adminId;
+    } else {
+      // Intentamos obtener el administrador por el ID de usuario
+      const Administrador = require('../models/adminModel');
+      const admin = await Administrador.findByUserId(req.userId);
+      
+      if (!admin) {
+        return res.status(403).json({ 
+          detail: 'No tienes permisos de administrador. Contacta al administrador del sistema.'
+        });
+      }
+      
+      adminId = admin.ID_administrador;
+    }
+    
+    const limite = req.query.limite ? parseInt(req.query.limite) : 100;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    
+    console.log(`Obteniendo publicaciones para administrador ID: ${adminId}`);
+    const publicaciones = await Publicacion.getByAdminId(adminId, limite, offset);
+    
+    res.json(publicaciones);
+  } catch (error) {
+    console.error('Error al obtener publicaciones del administrador:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   getAllPublicaciones,
   getLatestPublicaciones,
@@ -443,5 +478,6 @@ module.exports = {
   searchByContent,
   searchByTags,
   advancedSearch,
-  getPublicacionesByUserId
+  getPublicacionesByUserId,
+  getPublicacionesByAdminId
 };

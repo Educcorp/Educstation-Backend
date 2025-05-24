@@ -201,4 +201,17 @@ router.delete('/:id', authenticateToken, idValidator, publicacionesController.de
  */
 router.get('/user/me', authenticateToken, publicacionesController.getPublicacionesByUserId);
 
+/**
+ * @api {get} /api/publicaciones/admin/me Obtener publicaciones del administrador autenticado
+ * @apiName GetAdminPublicaciones
+ * @apiGroup Publicaciones
+ * @apiDescription Obtiene las publicaciones creadas por el administrador autenticado, ordenadas por fecha de modificación o creación
+ * 
+ * @apiQuery {Number} [limite=100] Cantidad de resultados a retornar
+ * @apiQuery {Number} [offset=0] Número de resultados a omitir (para paginación)
+ * 
+ * @apiSuccess {Object[]} publicaciones Lista de publicaciones del administrador
+ */
+router.get('/admin/me', authenticateToken, isAdmin, publicacionesController.getPublicacionesByAdminId);
+
 module.exports = router;
