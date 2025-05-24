@@ -438,30 +438,40 @@ const getPublicacionesByAdminId = async (req, res) => {
     
     if (req.adminId) {
       adminId = req.adminId;
+      console.log(`Usando adminId del middleware: ${adminId}`);
     } else {
       // Intentamos obtener el administrador por el ID de usuario
       const Administrador = require('../models/adminModel');
+      console.log(`Buscando administrador para userId: ${req.userId}`);
       const admin = await Administrador.findByUserId(req.userId);
       
       if (!admin) {
+        console.log(`No se encontró administrador para userId: ${req.userId}`);
         return res.status(403).json({ 
           detail: 'No tienes permisos de administrador. Contacta al administrador del sistema.'
         });
       }
       
       adminId = admin.ID_administrador;
+      console.log(`Administrador encontrado, ID: ${adminId}`);
+    }
+    
+    if (!adminId) {
+      console.error('Error: No se pudo determinar el ID de administrador');
+      return res.status(400).json({ detail: 'ID de administrador no válido' });
     }
     
     const limite = req.query.limite ? parseInt(req.query.limite) : 100;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     
-    console.log(`Obteniendo publicaciones para administrador ID: ${adminId}`);
+    console.log(`Obteniendo publicaciones para administrador ID: ${adminId}, limite: ${limite}, offset: ${offset}`);
     const publicaciones = await Publicacion.getByAdminId(adminId, limite, offset);
     
+    console.log(`Retornando ${publicaciones.length} publicaciones del administrador ${adminId}`);
     res.json(publicaciones);
   } catch (error) {
     console.error('Error al obtener publicaciones del administrador:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    res.status(500).json({ detail: 'Error en el servidor', error: error.message });
   }
 };
 

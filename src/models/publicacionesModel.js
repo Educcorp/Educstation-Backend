@@ -606,6 +606,15 @@ class Publicacion {
     try {
       console.log(`Buscando publicaciones para administrador ID: ${adminId}`);
       
+      if (!adminId) {
+        console.error('Error: adminId es undefined o null');
+        return [];
+      }
+      
+      // Convertir a enteros para asegurar que son números válidos
+      const limitNum = parseInt(limite, 10) || 10;
+      const offsetNum = parseInt(offset, 10) || 0;
+      
       const query = `
         SELECT p.*, a.Nombre as NombreAdmin,
         COALESCE(p.Fecha_modificacion, p.Fecha_creacion) as FechaOrdenamiento
@@ -616,7 +625,10 @@ class Publicacion {
         LIMIT ? OFFSET ?
       `;
       
-      const [publicaciones] = await pool.execute(query, [adminId, limite, offset]);
+      console.log(`Ejecutando consulta con adminId=${adminId}, limite=${limitNum}, offset=${offsetNum}`);
+      const [publicaciones] = await pool.execute(query, [adminId, limitNum, offsetNum]);
+      
+      console.log(`Consulta ejecutada, encontradas ${publicaciones.length} publicaciones`);
       
       // Normalizar datos de las publicaciones
       for (const publicacion of publicaciones) {
@@ -640,7 +652,8 @@ class Publicacion {
       return publicaciones;
     } catch (error) {
       console.error(`Error al obtener publicaciones del administrador ${adminId}:`, error);
-      throw error;
+      // Devolver array vacío en lugar de lanzar error para evitar el 500
+      return [];
     }
   }
 

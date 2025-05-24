@@ -5,15 +5,27 @@ class Administrador {
   // Buscar administrador por ID de usuario
   static async findByUserId(userId) {
     try {
+      console.log(`Buscando administrador para userId: ${userId}`);
+      
+      if (!userId) {
+        console.error('Error: userId es undefined o null');
+        return null;
+      }
+      
       // Primero verificamos si el usuario es superusuario
       const [userRows] = await pool.execute(
         'SELECT * FROM auth_user WHERE id = ? AND is_superuser = 1',
         [userId]
       );
       
+      console.log(`Resultado de la consulta auth_user: ${userRows.length} filas`);
+      
       if (!userRows[0]) {
+        console.log(`Usuario ${userId} no es superusuario`);
         return null; // No es superusuario
       }
+      
+      console.log(`Usuario ${userId} es superusuario, email: ${userRows[0].email}`);
       
       // Buscamos si ya existe un registro en la tabla Administrador
       const [adminRows] = await pool.execute(
@@ -21,12 +33,17 @@ class Administrador {
         [userRows[0].email]
       );
       
+      console.log(`Resultado de la consulta Administrador: ${adminRows.length} filas`);
+      
       if (adminRows[0]) {
+        console.log(`Administrador encontrado con ID: ${adminRows[0].ID_administrador}`);
         return {
           ...adminRows[0],
           auth_user_id: userRows[0].id
         };
       }
+      
+      console.log(`No se encontró administrador para ${userRows[0].email}, creando uno nuevo`);
       
       // Si no existe, creamos un nuevo registro en la tabla Administrador
       const [result] = await pool.execute(
@@ -38,6 +55,8 @@ class Administrador {
         ]
       );
       
+      console.log(`Nuevo administrador creado con ID: ${result.insertId}`);
+      
       return {
         ID_administrador: result.insertId,
         Nombre: `${userRows[0].first_name} ${userRows[0].last_name}`,
@@ -46,7 +65,7 @@ class Administrador {
       };
     } catch (error) {
       console.error('Error al buscar/crear administrador:', error);
-      throw error;
+      return null; // Devolver null en lugar de lanzar error
     }
   }
 

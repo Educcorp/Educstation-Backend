@@ -202,6 +202,25 @@ router.delete('/:id', authenticateToken, idValidator, publicacionesController.de
 router.get('/user/me', authenticateToken, publicacionesController.getPublicacionesByUserId);
 
 /**
+ * @api {get} /api/publicaciones/admin/debug Debug admin info
+ * @apiName DebugAdminInfo
+ * @apiGroup Publicaciones
+ * @apiDescription Debug endpoint to check admin ID and user info
+ */
+router.get('/admin/debug', authenticateToken, isAdmin, (req, res) => {
+  try {
+    res.json({
+      userId: req.userId,
+      adminId: req.adminId,
+      user: req.user,
+      message: 'Debug information for admin user'
+    });
+  } catch (error) {
+    res.status(500).json({ detail: 'Error en el servidor', error: error.message });
+  }
+});
+
+/**
  * @api {get} /api/publicaciones/admin/me Obtener publicaciones del administrador autenticado
  * @apiName GetAdminPublicaciones
  * @apiGroup Publicaciones
