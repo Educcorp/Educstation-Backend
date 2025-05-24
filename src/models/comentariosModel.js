@@ -13,7 +13,7 @@ class Comentario {
       
       // Intentar primero con JOIN a auth_user en lugar de Usuarios
       const [rows] = await pool.execute(
-        `SELECT c.*, u.username as Nickname 
+        `SELECT c.*, u.username as Nickname, u.avatar 
          FROM Comentarios c
          LEFT JOIN auth_user u ON c.ID_Usuario = u.id
          WHERE c.ID_comentario = ?`,
@@ -49,7 +49,7 @@ class Comentario {
     try {
       console.log('Buscando comentarios para publicación ID:', publicacionId);
       const [rows] = await pool.execute(
-        `SELECT c.*, u.username as usuarioNombre
+        `SELECT c.*, u.username as usuarioNombre, u.avatar
          FROM Comentarios c
          LEFT JOIN auth_user u ON c.ID_Usuario = u.id
          WHERE c.ID_publicacion = ?
