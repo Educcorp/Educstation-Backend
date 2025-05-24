@@ -10,7 +10,9 @@ const getAllPublicaciones = async (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const estado = req.query.estado || null;
 
+    console.log(`Obteniendo publicaciones: limite=${limite}, offset=${offset}, estado=${estado}`);
     const publicaciones = await Publicacion.getAll(limite, offset, estado);
+    console.log(`Retornando ${publicaciones.length} publicaciones`);
     res.json(publicaciones);
   } catch (error) {
     console.error('Error al obtener publicaciones:', error);
@@ -475,8 +477,61 @@ const getPublicacionesByAdminId = async (req, res) => {
   }
 };
 
+// Obtener todas las publicaciones para administradores (sin filtros)
+const getAllPublicacionesAdmin = async (req, res) => {
+  try {
+    const limite = req.query.limite ? parseInt(req.query.limite) : 100;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    
+    console.log(`Admin solicitando todas las publicaciones: limite=${limite}, offset=${offset}`);
+    
+    // Consulta directa a la base de datos para obtener todas las publicaciones
+    const { pool } = require('../config/database');
+    const query = `
+      SELECT p.*, a.Nombre as NombreAdmin 
+      FROM Publicaciones p
+      LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+      ORDER BY p.Fecha_modificacion DESC, p.Fecha_creacion DESC
+      LIMIT ${limite} OFFSET ${offset}
+    `;
+    
+    const [publicaciones] = await pool.query(query);
+    
+    // Procesar las imágenes de portada
+    for (const publicacion of publicaciones) {
+      if (publicacion.Imagen_portada) {
+        // Si es un Buffer, convertir a string
+        if (publicacion.Imagen_portada instanceof Buffer) {
+          try {
+            const imgString = publicacion.Imagen_portada.toString('utf8');
+            if (imgString.startsWith('data:image')) {
+              publicacion.Imagen_portada = imgString;
+            } else {
+              // Si no es una imagen válida, establecer a null
+              publicacion.Imagen_portada = null;
+            }
+          } catch (error) {
+            console.error(`Error al procesar imagen de portada para publicación ${publicacion.ID_publicaciones}:`, error);
+            publicacion.Imagen_portada = null;
+          }
+        } else if (typeof publicacion.Imagen_portada !== 'string' || publicacion.Imagen_portada === '[object Object]') {
+          // Manejar datos no string que no son buffer
+          publicacion.Imagen_portada = null;
+        }
+      }
+    }
+    
+    console.log(`Recuperadas ${publicaciones.length} publicaciones para administrador`);
+    res.json(publicaciones);
+  } catch (error) {
+    console.error('Error al obtener publicaciones para administrador:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   getAllPublicaciones,
+  getAllPublicacionesAdmin,
   getLatestPublicaciones,
   getPublicacionById,
   createPublicacion,

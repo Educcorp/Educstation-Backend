@@ -234,64 +234,16 @@ router.get('/admin/debug', authenticateToken, isAdmin, (req, res) => {
 router.get('/admin/me', authenticateToken, isAdmin, publicacionesController.getPublicacionesByAdminId);
 
 /**
- * @api {get} /api/publicaciones/all Obtener todas las publicaciones directamente
- * @apiName GetAllPublicacionesDirect
+ * @api {get} /api/publicaciones/all Obtener todas las publicaciones (para administradores)
+ * @apiName GetAllPublicacionesAdmin
  * @apiGroup Publicaciones
- * @apiDescription Retorna todas las publicaciones sin filtrado adicional (método alternativo)
+ * @apiDescription Retorna todas las publicaciones sin filtros para el panel de administrador
  * 
  * @apiQuery {Number} [limite=100] Cantidad de resultados a retornar
  * @apiQuery {Number} [offset=0] Número de resultados a omitir (para paginación)
  * 
- * @apiSuccess {Object[]} publicaciones Lista de publicaciones
+ * @apiSuccess {Object[]} publicaciones Lista completa de publicaciones
  */
-router.get('/all', async (req, res) => {
-  try {
-    const limite = req.query.limite ? parseInt(req.query.limite) : 100;
-    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    
-    console.log(`Solicitando todas las publicaciones directamente: limite=${limite}, offset=${offset}`);
-    
-    // Consulta directa a la base de datos
-    const { pool } = require('../config/database');
-    const [publicaciones] = await pool.execute(
-      `SELECT p.*, a.Nombre as NombreAdmin 
-       FROM Publicaciones p
-       LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-       ORDER BY p.Fecha_creacion DESC
-       LIMIT ? OFFSET ?`,
-      [limite, offset]
-    );
-    
-    // Procesar las imágenes de portada
-    for (const publicacion of publicaciones) {
-      if (publicacion.Imagen_portada) {
-        // Si es un Buffer, convertir a string
-        if (publicacion.Imagen_portada instanceof Buffer) {
-          try {
-            const imgString = publicacion.Imagen_portada.toString('utf8');
-            if (imgString.startsWith('data:image')) {
-              publicacion.Imagen_portada = imgString;
-            } else {
-              // Si no es una imagen válida, establecer a null
-              publicacion.Imagen_portada = null;
-            }
-          } catch (error) {
-            console.error(`Error al procesar imagen de portada para publicación ${publicacion.ID_publicaciones}:`, error);
-            publicacion.Imagen_portada = null;
-          }
-        } else if (typeof publicacion.Imagen_portada !== 'string' || publicacion.Imagen_portada === '[object Object]') {
-          // Manejar datos no string que no son buffer
-          publicacion.Imagen_portada = null;
-        }
-      }
-    }
-    
-    console.log(`Recuperadas ${publicaciones.length} publicaciones directamente de la base de datos`);
-    res.json(publicaciones);
-  } catch (error) {
-    console.error('Error al obtener publicaciones directamente:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
-  }
-});
+router.get('/all', authenticateToken, isAdmin, publicacionesController.getAllPublicacionesAdmin);
 
 module.exports = router;
