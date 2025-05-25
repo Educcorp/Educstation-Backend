@@ -49,16 +49,24 @@ class User {
   // Obtener el avatar por defecto
   static getDefaultAvatar() {
     try {
-      // Ruta a la imagen por defecto
-      const defaultAvatarPath = path.join(__dirname, '..', '..', '..', 'EducStation', 'public', 'assets', 'images', 'logoBN.png');
+      // Ruta a la imagen por defecto - usando la ruta absoluta proporcionada
+      let defaultAvatarPath = 'C:\\Users\\damva\\Educstation\\EducStation\\public\\assets\\images\\logoBN.png';
       
       // Verificar si el archivo existe
+      if (!fs.existsSync(defaultAvatarPath)) {
+        console.log('No se encontró la imagen en la ruta absoluta, intentando con ruta relativa...');
+        // Intentar con ruta relativa como fallback
+        defaultAvatarPath = path.join(__dirname, '..', '..', '..', 'EducStation', 'public', 'assets', 'images', 'logoBN.png');
+      }
+      
+      // Verificar si el archivo existe en alguna de las rutas
       if (fs.existsSync(defaultAvatarPath)) {
+        console.log(`Imagen de perfil por defecto encontrada en: ${defaultAvatarPath}`);
         // Leer el archivo y convertirlo a base64
         const imageBuffer = fs.readFileSync(defaultAvatarPath);
         return imageBuffer.toString('base64');
       } else {
-        console.error('No se encontró la imagen de avatar por defecto en:', defaultAvatarPath);
+        console.error('No se encontró la imagen de avatar por defecto en ninguna ruta');
         return null;
       }
     } catch (error) {
@@ -80,6 +88,7 @@ class User {
     
     // Obtener el avatar por defecto
     const defaultAvatar = this.getDefaultAvatar();
+    console.log(`Asignando avatar por defecto al usuario ${username}. Avatar obtenido: ${defaultAvatar ? 'Sí' : 'No'}`);
     
     try {
       const [result] = await pool.execute(

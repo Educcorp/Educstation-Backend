@@ -116,11 +116,19 @@ const login = async (req, res) => {
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
+    // Si el usuario no tiene avatar, obtener el avatar por defecto
+    let avatarData = user.avatar;
+    if (!avatarData) {
+      console.log('Usuario sin avatar, asignando avatar por defecto en login');
+      avatarData = User.getDefaultAvatar();
+    }
+
     res.json({
       access: accessToken,
       refresh: refreshToken,
       username: user.username,
-      is_superuser: user.is_superuser === 1
+      is_superuser: user.is_superuser === 1,
+      avatar: avatarData
     });
   } catch (error) {
     console.error('Error en login:', error);
