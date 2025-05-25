@@ -60,12 +60,16 @@ const register = async (req, res) => {
     const user = await User.findById(userId);
     console.log('Usuario creado con éxito, ID:', userId);
 
+    // Obtener el avatar por defecto que se asignó al usuario
+    const defaultAvatar = User.getDefaultAvatar();
+
     res.status(201).json({
       id: user.id,
       username: user.username,
       email: user.email,
       first_name: user.first_name,
-      last_name: user.last_name
+      last_name: user.last_name,
+      avatar: defaultAvatar
     });
   } catch (error) {
     console.error('Error en registro:', error);
@@ -167,6 +171,13 @@ const getUserDetails = async (req, res) => {
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
 
+    // Si el usuario no tiene avatar, obtener el avatar por defecto
+    let avatarData = user.avatar;
+    if (!avatarData) {
+      console.log('Usuario sin avatar, asignando avatar por defecto');
+      avatarData = User.getDefaultAvatar();
+    }
+
     res.json({
       id: user.id,
       username: user.username,
@@ -175,7 +186,7 @@ const getUserDetails = async (req, res) => {
       last_name: user.last_name,
       is_admin: user.is_staff === 1,
       is_superuser: user.is_superuser === 1,
-      avatar: user.avatar,
+      avatar: avatarData,
       date_joined: user.date_joined
     });
   } catch (error) {

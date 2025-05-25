@@ -1,5 +1,7 @@
 const { pool } = require('../config/database');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 class User {
   // Buscar usuario por email/username
@@ -44,6 +46,27 @@ class User {
     }
   }
 
+  // Obtener el avatar por defecto
+  static getDefaultAvatar() {
+    try {
+      // Ruta a la imagen por defecto
+      const defaultAvatarPath = path.join(__dirname, '..', '..', '..', 'EducStation', 'public', 'assets', 'images', 'logoBN.png');
+      
+      // Verificar si el archivo existe
+      if (fs.existsSync(defaultAvatarPath)) {
+        // Leer el archivo y convertirlo a base64
+        const imageBuffer = fs.readFileSync(defaultAvatarPath);
+        return imageBuffer.toString('base64');
+      } else {
+        console.error('No se encontró la imagen de avatar por defecto en:', defaultAvatarPath);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error al obtener el avatar por defecto:', error);
+      return null;
+    }
+  }
+
   // Crear un nuevo usuario
   static async create(userData) {
     const { username, email, password, first_name, last_name } = userData;
@@ -55,12 +78,15 @@ class User {
     // Generar fecha actual en formato MySQL
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
+    // Obtener el avatar por defecto
+    const defaultAvatar = this.getDefaultAvatar();
+    
     try {
       const [result] = await pool.execute(
         `INSERT INTO auth_user 
-        (username, email, password, first_name, last_name, is_staff, is_active, date_joined, is_superuser) 
-        VALUES (?, ?, ?, ?, ?, 0, 1, ?, 0)`,
-        [username, email, hashedPassword, first_name, last_name, now]
+        (username, email, password, first_name, last_name, is_staff, is_active, date_joined, is_superuser, avatar) 
+        VALUES (?, ?, ?, ?, ?, 0, 1, ?, 0, ?)`,
+        [username, email, hashedPassword, first_name, last_name, now, defaultAvatar]
       );
       
       return result.insertId;

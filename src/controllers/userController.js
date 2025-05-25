@@ -42,6 +42,9 @@ exports.register = async (req, res) => {
     // Generar token
     const token = generateToken(newUser);
 
+    // Obtener el avatar por defecto
+    const defaultAvatar = User.getDefaultAvatar();
+
     res.status(201).json({
       token,
       user: {
@@ -51,7 +54,8 @@ exports.register = async (req, res) => {
         first_name: newUser.first_name,
         last_name: newUser.last_name,
         is_staff: newUser.is_staff,
-        is_superuser: newUser.is_superuser
+        is_superuser: newUser.is_superuser,
+        avatar: defaultAvatar
       }
     });
   } catch (error) {
@@ -80,6 +84,13 @@ exports.login = async (req, res) => {
     // Generar token
     const token = generateToken(user);
 
+    // Si el usuario no tiene avatar, obtener el avatar por defecto
+    let avatarData = user.avatar;
+    if (!avatarData) {
+      console.log('Usuario sin avatar, asignando avatar por defecto');
+      avatarData = User.getDefaultAvatar();
+    }
+
     res.json({
       token,
       user: {
@@ -90,7 +101,7 @@ exports.login = async (req, res) => {
         last_name: user.last_name,
         is_staff: user.is_staff,
         is_superuser: user.is_superuser,
-        avatar: user.avatar
+        avatar: avatarData
       }
     });
   } catch (error) {
@@ -107,6 +118,13 @@ exports.getCurrentUser = async (req, res) => {
       return res.status(404).json({ detail: 'Usuario no encontrado' });
     }
 
+    // Si el usuario no tiene avatar, obtener el avatar por defecto
+    let avatarData = user.avatar;
+    if (!avatarData) {
+      console.log('Usuario sin avatar, asignando avatar por defecto');
+      avatarData = User.getDefaultAvatar();
+    }
+
     res.json({
       id: user.id,
       username: user.username,
@@ -115,7 +133,7 @@ exports.getCurrentUser = async (req, res) => {
       last_name: user.last_name,
       is_staff: user.is_staff,
       is_superuser: user.is_superuser,
-      avatar: user.avatar
+      avatar: avatarData
     });
   } catch (error) {
     console.error('Error al obtener usuario actual:', error);
