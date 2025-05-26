@@ -533,15 +533,46 @@ const getAllPublicacionesAdmin = async (req, res) => {
 const likePublicacion = async (req, res) => {
   try {
     const { id } = req.params;
-    const nuevoContador = await Publicacion.incrementarLikes(id);
-    if (nuevoContador !== null) {
-      res.json({ success: true, message: 'Like registrado', contador_likes: nuevoContador });
-    } else {
-      res.status(404).json({ success: false, message: 'Publicación no encontrada' });
+    
+    // Validación del ID
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de publicación inválido' 
+      });
     }
+
+    const nuevoContador = await Publicacion.incrementarLikes(id);
+    
+    if (nuevoContador === null) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Publicación no encontrada' 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Like registrado exitosamente', 
+      contador_likes: nuevoContador 
+    });
   } catch (error) {
     console.error('Error en likePublicacion:', error);
-    res.status(500).json({ success: false, message: 'Error al dar like' });
+    
+    // Manejo específico de errores de conexión
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Error de conexión con la base de datos' 
+      });
+    }
+    
+    // Error general
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al procesar el like',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

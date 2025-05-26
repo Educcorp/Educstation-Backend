@@ -664,23 +664,41 @@ class Publicacion {
 
   // Incrementar contador de likes y devolver el nuevo valor
   static async incrementarLikes(id) {
+    const connection = await pool.getConnection();
     try {
-      const [result] = await pool.execute(
-        'UPDATE Publicaciones SET contador_likes = contador_likes + 1 WHERE ID_publicaciones = ?',
+      await connection.beginTransaction();
+      
+      // Primero verificamos que la publicación existe
+      const [check] = await connection.execute(
+        'SELECT ID_publicaciones, contador_likes FROM Publicaciones WHERE ID_publicaciones = ? FOR UPDATE',
         [id]
       );
-      if (result.affectedRows > 0) {
-        // Obtener el nuevo contador actualizado
-        const [rows] = await pool.execute(
-          'SELECT contador_likes FROM Publicaciones WHERE ID_publicaciones = ?',
-          [id]
-        );
-        return rows.length > 0 ? rows[0].contador_likes : null;
+
+      if (check.length === 0) {
+        await connection.rollback();
+        return null;
       }
-      return null;
+
+      // Actualizamos el contador
+      const [updateResult] = await connection.execute(
+        'UPDATE Publicaciones SET contador_likes = COALESCE(contador_likes, 0) + 1 WHERE ID_publicaciones = ?',
+        [id]
+      );
+
+      // Obtenemos el nuevo valor
+      const [result] = await connection.execute(
+        'SELECT contador_likes FROM Publicaciones WHERE ID_publicaciones = ?',
+        [id]
+      );
+
+      await connection.commit();
+      return result[0]?.contador_likes || 0;
     } catch (error) {
-      console.error('Error al incrementar likes:', error);
+      await connection.rollback();
+      console.error('Error en incrementarLikes:', error);
       throw error;
+    } finally {
+      connection.release();
     }
   }
 
