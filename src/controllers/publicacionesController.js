@@ -535,7 +535,9 @@ const likePublicacion = async (req, res) => {
     const { id } = req.params;
     const success = await Publicacion.incrementarLikes(id);
     if (success) {
-      res.json({ success: true, message: 'Like registrado' });
+      // Obtener el nuevo contador de likes
+      const publicacion = await Publicacion.findById(id);
+      res.json({ success: true, message: 'Like registrado', contador_likes: publicacion?.contador_likes || 0 });
     } else {
       res.status(404).json({ success: false, message: 'Publicación no encontrada' });
     }
