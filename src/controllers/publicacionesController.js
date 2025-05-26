@@ -529,6 +529,77 @@ const getAllPublicacionesAdmin = async (req, res) => {
   }
 };
 
+// Dar like a una publicación
+const likePublicacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validación básica del ID
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de publicación inválido' 
+      });
+    }
+
+    // Conexión directa a la base de datos
+    const { pool } = require('../config/database');
+    
+    // Primero verificamos que la publicación existe
+    const [publicacion] = await pool.execute(
+      'SELECT ID_publicaciones FROM Publicaciones WHERE ID_publicaciones = ?',
+      [id]
+    );
+
+    if (publicacion.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Publicación no encontrada' 
+      });
+    }
+
+    // Actualizamos el contador de likes directamente
+    const [updateResult] = await pool.execute(
+      'UPDATE Publicaciones SET contador_likes = IFNULL(contador_likes, 0) + 1 WHERE ID_publicaciones = ?',
+      [id]
+    );
+
+    // Obtenemos el nuevo valor
+    const [result] = await pool.execute(
+      'SELECT contador_likes FROM Publicaciones WHERE ID_publicaciones = ?',
+      [id]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Like registrado exitosamente', 
+      contador_likes: result[0]?.contador_likes || 0 
+    });
+  } catch (error) {
+    console.error('Error en likePublicacion:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al procesar el like',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Quitar like a una publicación (opcional)
+const unlikePublicacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const success = await Publicacion.decrementarLikes(id);
+    if (success) {
+      res.json({ success: true, message: 'Like retirado' });
+    } else {
+      res.status(404).json({ success: false, message: 'Publicación no encontrada' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al quitar like' });
+  }
+};
+
 module.exports = {
   getAllPublicaciones,
   getAllPublicacionesAdmin,
@@ -545,4 +616,6 @@ module.exports = {
   advancedSearch,
   getPublicacionesByUserId,
   getPublicacionesByAdminId,
+  likePublicacion,
+  unlikePublicacion
 };
