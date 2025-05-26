@@ -529,6 +529,36 @@ const getAllPublicacionesAdmin = async (req, res) => {
   }
 };
 
+// Dar like a una publicación
+const likePublicacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const success = await Publicacion.incrementarLikes(id);
+    if (success) {
+      res.json({ success: true, message: 'Like registrado' });
+    } else {
+      res.status(404).json({ success: false, message: 'Publicación no encontrada' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al dar like' });
+  }
+};
+
+// Quitar like a una publicación (opcional)
+const unlikePublicacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const success = await Publicacion.decrementarLikes(id);
+    if (success) {
+      res.json({ success: true, message: 'Like retirado' });
+    } else {
+      res.status(404).json({ success: false, message: 'Publicación no encontrada' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al quitar like' });
+  }
+};
+
 module.exports = {
   getAllPublicaciones,
   getAllPublicacionesAdmin,
@@ -544,5 +574,7 @@ module.exports = {
   searchByTags,
   advancedSearch,
   getPublicacionesByUserId,
-  getPublicacionesByAdminId
+  getPublicacionesByAdminId,
+  likePublicacion,
+  unlikePublicacion
 };

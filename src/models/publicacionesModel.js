@@ -662,6 +662,34 @@ class Publicacion {
     }
   }
 
+  // Incrementar contador de likes
+  static async incrementarLikes(id) {
+    try {
+      const [result] = await pool.execute(
+        'UPDATE Publicaciones SET contador_likes = contador_likes + 1 WHERE ID_publicaciones = ?',
+        [id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error al incrementar likes:', error);
+      throw error;
+    }
+  }
+
+  // Decrementar contador de likes (opcional)
+  static async decrementarLikes(id) {
+    try {
+      const [result] = await pool.execute(
+        'UPDATE Publicaciones SET contador_likes = GREATEST(contador_likes - 1, 0) WHERE ID_publicaciones = ?',
+        [id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error al decrementar likes:', error);
+      throw error;
+    }
+  }
+
 }
 
 module.exports = Publicacion;

@@ -246,4 +246,9 @@ router.get('/admin/me', authenticateToken, isAdmin, publicacionesController.getP
  */
 router.get('/all', authenticateToken, isAdmin, publicacionesController.getAllPublicacionesAdmin);
 
+// Ruta para dar like a una publicación
+router.post('/:id/like', publicacionesController.likePublicacion);
+// Ruta para quitar like a una publicación (opcional)
+router.post('/:id/unlike', publicacionesController.unlikePublicacion);
+
 module.exports = router;
