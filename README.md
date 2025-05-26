@@ -2,7 +2,6 @@
 <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.herokuapp.com?font=Source+Code+Pro&weight=700&duration=2000&pause=1000&color=d2b99a&width=435&lines=%F0%9F%8E%93+Educational+Blog+Platform+%F0%9F%93%9A;%F0%9F%8C%B1+Pedagogical+Innovation+%F0%9F%92%A1;%F0%9F%91%A8%E2%80%8D%F0%9F%8F%AB+Educators+Community+%F0%9F%91%A9%E2%80%8D%F0%9F%8F%AB;%F0%9F%92%BB+Digital+Educational+Resources+%F0%9F%93%B1;%F0%9F%93%88+Teacher+Professional+Development+%F0%9F%8E%AF" alt="Typing SVG" /></a>
 </div>
 
-![EducStation Banner](public/assets/images/Cartula_Blog.png)
 # <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Animals/Raccoon.png" alt="Raccoon" width="55" height="55" /> EducStation by EducCorp
 
 
@@ -80,25 +79,6 @@ EducStation is born from EducCorp's vision to transform education through collab
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Window.png" alt="Window" width="25" height="25" /> Getting Started  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Old%20Key.png" alt="Old Key" width="25" height="25" />
 
-bash
-# Clone the repository:
-git clone https://github.com/Educcorp/EducStation.git
-
-# Navigate to the repository directory:
-cd EducStation
-
-# Open the repository in your code editor:
-code .
-
-# Visit the following link to download Node.js:
-
-[![Node.js](https://img.shields.io/badge/Node.js-Download-0b4444?style=plastic&logo=star&color=0b4444&labelColor=91a8a4)](https://nodejs.org/en/download)
-
-python 
-# Download the appropriate version of Node.js for your operating system and then restart your computer.
- 
-# Command to run the blog locally:
-npm start
 
 
 
