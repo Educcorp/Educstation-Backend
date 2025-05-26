@@ -52,95 +52,152 @@ class Publicacion {
     }
   }
 
-  // Obtener todas las publicaciones
+  // Obtener todas las publicaciones (OPTIMIZADO)
   static async getAll(limite = 10, offset = 0, estado = null) {
     try {
-      let query = `
-        SELECT p.*, a.Nombre as NombreAdmin 
-        FROM Publicaciones p
-        LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
-      `;
-
       const limitNum = parseInt(limite, 10) || 10;
       const offsetNum = parseInt(offset, 10) || 0;
+
+      // OPTIMIZACIÓN: Una sola consulta con JOINs para obtener todo
+      let query = `
+        SELECT 
+          p.*,
+          a.Nombre as NombreAdmin,
+          GROUP_CONCAT(
+            CONCAT(c.ID_categoria, ':', c.Nombre_categoria) 
+            SEPARATOR '|'
+          ) as categorias_concat
+        FROM Publicaciones p
+        LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+        LEFT JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+        LEFT JOIN Categorias c ON pc.ID_categoria = c.ID_categoria
+      `;
 
       if (estado && typeof estado === 'string' && estado.trim() !== '') {
         query += ` WHERE p.Estado = '${estado}'`;
       }
 
-      query += ` ORDER BY p.Fecha_creacion DESC LIMIT ${limitNum} OFFSET ${offsetNum}`;
+      query += ` 
+        GROUP BY p.ID_publicaciones
+        ORDER BY p.Fecha_creacion DESC 
+        LIMIT ${limitNum} OFFSET ${offsetNum}
+      `;
 
-      console.log('Ejecutando consulta getAll:', query);
+      console.log('📊 Ejecutando consulta optimizada getAll');
 
       const [publicaciones] = await pool.query(query);
       
-      // Procesar imágenes de portada
-      for (const publicacion of publicaciones) {
+      // Procesar datos en lote
+      const processedPublicaciones = publicaciones.map(publicacion => {
+        // Procesar imagen de portada
         this.processImagenPortada(publicacion);
-      }
-      
-      // Para cada publicación, obtener sus categorías
-      if (publicaciones.length > 0) {
-        for (const publicacion of publicaciones) {
-          try {
-            const categorias = await this.getCategorias(publicacion.ID_publicaciones);
-            publicacion.categorias = categorias || [];
-          } catch (err) {
-            console.error(`Error al obtener categorías para publicación ${publicacion.ID_publicaciones}:`, err);
-            publicacion.categorias = [];
-          }
+        
+        // Procesar categorías desde el GROUP_CONCAT
+        publicacion.categorias = [];
+        if (publicacion.categorias_concat) {
+          publicacion.categorias = publicacion.categorias_concat
+            .split('|')
+            .filter(cat => cat && cat.includes(':'))
+            .map(cat => {
+              const [ID_categoria, Nombre_categoria] = cat.split(':');
+              return { ID_categoria: parseInt(ID_categoria), Nombre_categoria };
+            });
         }
-      }
-      console.log(`Recuperadas ${publicaciones.length} publicaciones con sus categorías`);
-      return publicaciones;
+        
+        // Limpiar campo temporal
+        delete publicacion.categorias_concat;
+        
+        return publicacion;
+      });
+      
+      console.log(`✅ Recuperadas ${processedPublicaciones.length} publicaciones optimizadas`);
+      return processedPublicaciones;
     } catch (error) {
-      console.error('Error al obtener publicaciones:', error);
+      console.error('❌ Error al obtener publicaciones:', error);
       throw error;
     }
   }
 
-  // Obtener las últimas publicaciones (versión simplificada)
+  // Obtener las últimas publicaciones (OPTIMIZADO)
   static async getLatest(limite = 10) {
     try {
-      // Asegurar que el límite sea un entero válido
       const limitNum = parseInt(limite, 10) || 10;
       
-      // Consulta simplificada usando query en lugar de execute
+      // Consulta optimizada con una sola query
       const query = `
-        SELECT p.*, a.Nombre as NombreAdmin 
+        SELECT 
+          p.*,
+          a.Nombre as NombreAdmin,
+          GROUP_CONCAT(
+            CONCAT(c.ID_categoria, ':', c.Nombre_categoria) 
+            SEPARATOR '|'
+          ) as categorias_concat
         FROM Publicaciones p
         LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+        LEFT JOIN Publicaciones_Categorias pc ON p.ID_publicaciones = pc.ID_publicacion
+        LEFT JOIN Categorias c ON pc.ID_categoria = c.ID_categoria
+        WHERE p.Estado = 'publicado'
+        GROUP BY p.ID_publicaciones
         ORDER BY p.Fecha_creacion DESC 
         LIMIT ${limitNum}
       `;
 
-      console.log(`Ejecutando consulta getLatest con límite ${limitNum}`);
+      console.log(`🚀 Ejecutando consulta optimizada getLatest (${limitNum} posts)`);
       const [publicaciones] = await pool.query(query);
       
-      // Procesar imágenes de portada
-      for (const publicacion of publicaciones) {
+      // Procesamiento optimizado en lote
+      const processedPublicaciones = publicaciones.map(publicacion => {
+        // Procesar imagen de portada
         this.processImagenPortada(publicacion);
-      }
-      
-      // Intentamos obtener categorías, pero si falla no interrumpimos
-      if (publicaciones.length > 0) {
-        for (const publicacion of publicaciones) {
-          try {
-            const categorias = await this.getCategorias(publicacion.ID_publicaciones);
-            publicacion.categorias = categorias || [];
-          } catch (err) {
-            console.error(`Error al obtener categorías para publicación ${publicacion.ID_publicaciones}:`, err);
-            publicacion.categorias = []; // Categorías vacías en caso de error
-          }
+        
+        // Procesar categorías desde GROUP_CONCAT
+        publicacion.categorias = [];
+        if (publicacion.categorias_concat) {
+          publicacion.categorias = publicacion.categorias_concat
+            .split('|')
+            .filter(cat => cat && cat.includes(':'))
+            .map(cat => {
+              const [ID_categoria, Nombre_categoria] = cat.split(':');
+              return { ID_categoria: parseInt(ID_categoria), Nombre_categoria };
+            });
         }
-      }
+        
+        // Limpiar campo temporal
+        delete publicacion.categorias_concat;
+        
+        return publicacion;
+      });
       
-      console.log(`Recuperadas ${publicaciones.length} publicaciones recientes`);
-      return publicaciones;
+      console.log(`⚡ Recuperadas ${processedPublicaciones.length} publicaciones recientes optimizadas`);
+      return processedPublicaciones;
     } catch (error) {
-      console.error('Error en getLatest:', error);
-      // Si incluso esta consulta falla, devolvemos un array vacío
-      return [];
+      console.error('❌ Error en getLatest optimizado:', error);
+      // Fallback a método simple si falla
+      try {
+        console.log('🔄 Intentando método fallback...');
+        const fallbackQuery = `
+          SELECT p.*, a.Nombre as NombreAdmin 
+          FROM Publicaciones p
+          LEFT JOIN Administrador a ON p.ID_administrador = a.ID_administrador
+          WHERE p.Estado = 'publicado'
+          ORDER BY p.Fecha_creacion DESC 
+          LIMIT ${limitNum}
+        `;
+        
+        const [fallbackPublicaciones] = await pool.query(fallbackQuery);
+        
+        // Procesar solo imágenes para el fallback
+        fallbackPublicaciones.forEach(publicacion => {
+          this.processImagenPortada(publicacion);
+          publicacion.categorias = []; // Sin categorías en fallback
+        });
+        
+        console.log(`🆘 Fallback completado: ${fallbackPublicaciones.length} posts`);
+        return fallbackPublicaciones;
+      } catch (fallbackError) {
+        console.error('❌ Error en fallback:', fallbackError);
+        return [];
+      }
     }
   }
 
