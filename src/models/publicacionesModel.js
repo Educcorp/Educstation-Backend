@@ -662,14 +662,22 @@ class Publicacion {
     }
   }
 
-  // Incrementar contador de likes
+  // Incrementar contador de likes y devolver el nuevo valor
   static async incrementarLikes(id) {
     try {
       const [result] = await pool.execute(
         'UPDATE Publicaciones SET contador_likes = contador_likes + 1 WHERE ID_publicaciones = ?',
         [id]
       );
-      return result.affectedRows > 0;
+      if (result.affectedRows > 0) {
+        // Obtener el nuevo contador actualizado
+        const [rows] = await pool.execute(
+          'SELECT contador_likes FROM Publicaciones WHERE ID_publicaciones = ?',
+          [id]
+        );
+        return rows.length > 0 ? rows[0].contador_likes : null;
+      }
+      return null;
     } catch (error) {
       console.error('Error al incrementar likes:', error);
       throw error;
