@@ -542,6 +542,7 @@ const likePublicacion = async (req, res) => {
       res.status(404).json({ success: false, message: 'Publicación no encontrada' });
     }
   } catch (error) {
+    console.error('Error en likePublicacion:', error);
     res.status(500).json({ success: false, message: 'Error al dar like' });
   }
 };
