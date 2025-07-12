@@ -25,7 +25,7 @@ async function testImageStorage() {
     }
     console.log(`Usando administrador con ID: ${adminId}`);
     
-    // Base64 simple para una imagen de prueba pequeña
+    // Base64 simple para una imagen de prueba pequeña XD
     const sampleBase64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     
     console.log('Creando publicación con imagen Base64 simple...');
