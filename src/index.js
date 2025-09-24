@@ -203,7 +203,7 @@ const app = express();
 // Middleware
 app.use(express.json({ limit: '50mb' })); // Aumentado el límite para imágenes base64
 app.use(cors({
-  origin: ['http://localhost:3002', 'https://www.educstation.com', 'https://educstation.com'],
+  origin: ['http://localhost:3001', 'http://localhost:3002', 'https://www.educstation.com', 'https://educstation.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
